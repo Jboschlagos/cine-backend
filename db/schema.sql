@@ -31,3 +31,12 @@ CREATE TABLE IF NOT EXISTS comments (
 
 CREATE INDEX IF NOT EXISTS idx_reviews_mood ON reviews(mood);
 CREATE INDEX IF NOT EXISTS idx_comments_review_id ON comments(review_id);
+
+CREATE TABLE IF NOT EXISTS review_images (
+  id         SERIAL PRIMARY KEY,
+  review_id  INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+  image_url  TEXT NOT NULL,
+  position   INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_images_review_id ON review_images(review_id);

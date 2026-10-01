@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/requireAdmin";
 
 // GET /api/reviews/:id -> detalle de una reseña (incluye sus comentarios)
 export async function GET(_request, { params }) {
-  const { id } = params;
+  const { id } = await params;
 
   const reviewRows = await sql`SELECT * FROM reviews WHERE id = ${id}`;
   if (reviewRows.length === 0) {
@@ -24,7 +24,7 @@ export async function PUT(request, { params }) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  const { id } = params;
+  const { id } = await params;
   const body = await request.json();
   const { review_text, soundtrack_embed_url, mood } = body;
 
@@ -48,7 +48,7 @@ export async function DELETE(_request, { params }) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  const { id } = params;
+  const { id } = await params;
   await sql`DELETE FROM reviews WHERE id = ${id}`;
   return NextResponse.json({ ok: true });
 }
