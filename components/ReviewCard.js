@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MOOD_LABELS } from "@/lib/mood";
 
 export default function ReviewCard({ review }) {
-  const thumbnail = review.images?.[0]?.image_url;
+  const thumbnail = review.images?.[0]?.image_url ?? review.poster_url;
 
   return (
     <Link

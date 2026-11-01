@@ -3,17 +3,25 @@ import { sql } from "@/lib/db";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { getMovieDetails } from "@/lib/tmdb";
 import { inferMood } from "@/lib/mood";
+import { toEmbedUrl } from "@/lib/embed";
 
 const ALLOWED_IMAGE_HOSTS = ["image.tmdb.org", "res.cloudinary.com"];
 const MAX_IMAGES = 10;
 
-// Solo aceptamos URLs https de TMDB o Cloudinary, máximo 10 imágenes.
+// Solo aceptamos entre 1 y 10 URLs https de TMDB o Cloudinary.
 function validImages(images) {
-  if (!Array.isArray(images) || images.length > MAX_IMAGES) return false;
+  if (
+    !Array.isArray(images) ||
+    images.length === 0 ||
+    images.length > MAX_IMAGES
+  )
+    return false;
   return images.every((u) => {
     try {
       const url = new URL(u);
-      return url.protocol === "https:" && ALLOWED_IMAGE_HOSTS.includes(url.hostname);
+      return (
+        url.protocol === "https:" && ALLOWED_IMAGE_HOSTS.includes(url.hostname)
+      );
     } catch {
       return false;
     }
@@ -46,13 +54,27 @@ export async function POST(request) {
   if (!tmdb_id || !review_text) {
     return NextResponse.json(
       { error: "Faltan campos requeridos: tmdb_id, review_text" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (!validImages(images)) {
     return NextResponse.json(
-      { error: "images debe ser una lista (máx. 10) de URLs https de TMDB o Cloudinary" },
-      { status: 400 }
+      {
+        error:
+          "images debe tener entre 1 y 10 URLs https de TMDB o Cloudinary",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Guardamos siempre la URL de embed; si el link no es de Spotify/YouTube, error.
+  const embedUrl = soundtrack_embed_url
+    ? toEmbedUrl(soundtrack_embed_url)
+    : null;
+  if (soundtrack_embed_url && !embedUrl) {
+    return NextResponse.json(
+      { error: "El soundtrack debe ser un link de Spotify o YouTube" },
+      { status: 400 },
     );
   }
 
@@ -67,7 +89,7 @@ export async function POST(request) {
         review_text, mood, soundtrack_embed_url
       ) VALUES (
         ${movie.tmdb_id}, ${movie.title}, ${movie.poster_url}, ${movie.release_year},
-        ${movie.genre_names}, ${review_text}, ${mood}, ${soundtrack_embed_url ?? null}
+        ${movie.genre_names}, ${review_text}, ${mood}, ${embedUrl}
       )
       RETURNING *
     ),
