@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { searchMovies } from "@/lib/tmdb";
 
-// GET /api/movies/search?q=titulo  (solo admin, se usa desde /admin al crear una reseña)
+// GET /api/movies/search?q=titulo[&type=tv]  (solo admin, se usa desde /admin al crear una reseña)
 export async function GET(request) {
   const denied = await requireAdmin();
   if (denied) return denied;
@@ -17,6 +17,6 @@ export async function GET(request) {
     );
   }
 
-  const results = await searchMovies(query.trim());
+  const results = await searchMovies(query.trim(), searchParams.get("type") === "tv" ? "tv" : "movie");
   return NextResponse.json(results);
 }

@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
 
 export default async function AdminLayout({ children }) {
@@ -10,7 +11,11 @@ export default async function AdminLayout({ children }) {
   return (
     <div>
       <div className="flex items-center justify-between border-b border-neutral-800 p-4">
-        <span className="text-sm text-neutral-400">Panel admin</span>
+        <nav className="flex items-center gap-4 text-sm text-neutral-400">
+          <span>Panel admin</span>
+          <Link href="/admin" className="hover:text-white">Nueva reseña</Link>
+          <Link href="/admin/importar" className="hover:text-white">Importar de IG</Link>
+        </nav>
         <LogoutButton />
       </div>
       {children}

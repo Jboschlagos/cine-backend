@@ -1,20 +1,27 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import ReviewAdminBar from "@/components/ReviewAdminBar";
 import { sql } from "@/lib/db";
 import { MOOD_LABELS } from "@/lib/mood";
 import { toEmbedUrl } from "@/lib/embed";
 import ImageCarousel from "@/components/ImageCarousel";
 import CommentForm from "@/components/CommentForm";
+import MovieSheet from "@/components/MovieSheet";
 
 // Página pública de una reseña: /reviews/123
 export default async function ReviewPage({ params }) {
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound(); // si el id no es un número -> 404
 
-  // Las 3 consultas van en paralelo para que cargue más rápido.
-  const [reviewRows, images, comments] = await Promise.all([
+  // Las consultas van en paralelo para que cargue más rápido.
+  // session = tu sesión de admin (null para cualquier visitante).
+  const [reviewRows, images, comments, session, igRows] = await Promise.all([
     sql`SELECT * FROM reviews WHERE id = ${id}`,
     sql`SELECT image_url FROM review_images WHERE review_id = ${id} ORDER BY position ASC`,
     sql`SELECT * FROM comments WHERE review_id = ${id} ORDER BY created_at ASC`,
+    auth.api.getSession({ headers: await headers() }),
+    sql`SELECT 1 FROM ig_posts WHERE review_id = ${id}`,
   ]);
 
   const review = reviewRows[0];
@@ -36,6 +43,7 @@ export default async function ReviewPage({ params }) {
       <ImageCarousel images={imageUrls} alt={review.title} />
 
       <section className="flex flex-col gap-4">
+        {session && <ReviewAdminBar id={review.id} title={review.title} fromInstagram={igRows.length > 0} />}
         <div>
           <h1 className="text-2xl font-medium">
             {review.title}{" "}
@@ -44,9 +52,18 @@ export default async function ReviewPage({ params }) {
             )}
           </h1>
           <p className="mt-1 text-sm text-neutral-400">
+            {review.media_type === "tv" && "Serie · "}
             {MOOD_LABELS[review.mood]}
             {review.genres?.length > 0 && ` · ${review.genres.join(", ")}`}
           </p>
+          <MovieSheet
+            tmdbId={review.tmdb_id}
+            mediaType={review.media_type}
+            showSoundtrack={false}
+            className="mt-3 rounded-full bg-neutral-800 px-4 py-1.5 text-sm hover:bg-neutral-700"
+          >
+            Ficha técnica
+          </MovieSheet>
         </div>
 
         <p className="whitespace-pre-line leading-relaxed">{review.review_text}</p>

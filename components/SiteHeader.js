@@ -1,0 +1,91 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { SITE } from "@/lib/site";
+import { InstagramIcon } from "@/components/icons";
+import Logo from "@/components/Logo";
+
+const LINKS = [
+  { href: "/", label: "Reseñas" },
+  { href: "/series", label: "Series" },
+  { href: "/discover", label: "Descubrir" },
+  { href: "/sobre-mi", label: "Sobre mí" },
+];
+
+export default function SiteHeader() {
+  const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Al cambiar de página, cerramos el menú del celular.
+  useEffect(() => setMenuOpen(false), [pathname]);
+
+  // "Reseñas" queda marcado también cuando estás dentro de una reseña.
+  const isActive = (href) =>
+    href === "/"
+      ? pathname === "/" || pathname.startsWith("/reviews")
+      : pathname.startsWith(href);
+
+  const links = LINKS.map(({ href, label }) => (
+    <Link
+      key={href}
+      href={href}
+      aria-current={isActive(href) ? "page" : undefined}
+      className={`text-xs tracking-[0.15em] transition-colors ${
+        isActive(href) ? "text-white" : "text-neutral-500 hover:text-white"
+      }`}
+    >
+      {label}
+    </Link>
+  ));
+
+  const instagram = (
+    <a
+      href={SITE.instagram}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Instagram"
+      className="text-neutral-500 transition-colors hover:text-white"
+    >
+      <InstagramIcon className="h-4 w-4" />
+    </a>
+  );
+
+  return (
+    <header className="sticky top-0 z-30 border-b border-neutral-900 bg-black/85 font-display uppercase backdrop-blur">
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+        {/* Izquierda: logo */}
+        <Link href="/" aria-label={`${SITE.name}, inicio`} className="text-white">
+          <Logo className="h-7 w-auto sm:h-8" />
+        </Link>
+
+        {/* Derecha, en pantallas de 768px o más ("md") */}
+        <div className="hidden items-center gap-6 md:flex">
+          {links}
+          {instagram}
+        </div>
+
+        {/* Botón ☰ solo en celular */}
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          className="text-2xl leading-none text-neutral-400 hover:text-white md:hidden"
+        >
+          {menuOpen ? "×" : "☰"}
+        </button>
+      </nav>
+
+      {/* Menú desplegable del celular */}
+      {menuOpen && (
+        <div id="mobile-menu" className="flex flex-col gap-5 border-t border-neutral-900 px-4 py-6 md:hidden">
+          {links}
+          {instagram}
+        </div>
+      )}
+    </header>
+  );
+}

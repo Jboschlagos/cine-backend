@@ -18,8 +18,18 @@ CREATE TABLE IF NOT EXISTS reviews (
   review_text         TEXT NOT NULL,
   mood                VARCHAR(50) NOT NULL,   -- resultado del mapeo automático, ej. 'para-llorar'
   soundtrack_embed_url TEXT,                  -- URL de embed de Spotify o YouTube
+  director            TEXT,                   -- desde TMDB (créditos)
+  composer            TEXT,                   -- compositor de la música, desde TMDB
+  countries           TEXT[],                 -- países de origen, ej. {'CL'} (filtro "origen")
+  runtime             INTEGER,                -- duración en minutos (filtro "duración")
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Si tu tabla reviews ya existía antes de agregar director/composer, corre:
+--   ALTER TABLE reviews ADD COLUMN IF NOT EXISTS director TEXT;
+--   ALTER TABLE reviews ADD COLUMN IF NOT EXISTS composer TEXT;
+--   ALTER TABLE reviews ADD COLUMN IF NOT EXISTS countries TEXT[];
+--   ALTER TABLE reviews ADD COLUMN IF NOT EXISTS runtime INTEGER;
 
 CREATE TABLE IF NOT EXISTS comments (
   id          SERIAL PRIMARY KEY,
@@ -40,3 +50,6 @@ CREATE TABLE IF NOT EXISTS review_images (
 );
 
 CREATE INDEX IF NOT EXISTS idx_review_images_review_id ON review_images(review_id);
+
+-- Series e importación de Instagram: ver db/migrations/2026-11-03-series-e-instagram.sql
+-- (agrega reviews.media_type y la tabla ig_posts). Córrelo después de este archivo.

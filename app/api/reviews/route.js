@@ -4,29 +4,7 @@ import { requireAdmin } from "@/lib/requireAdmin";
 import { getMovieDetails } from "@/lib/tmdb";
 import { inferMood } from "@/lib/mood";
 import { toEmbedUrl } from "@/lib/embed";
-
-const ALLOWED_IMAGE_HOSTS = ["image.tmdb.org", "res.cloudinary.com"];
-const MAX_IMAGES = 10;
-
-// Solo aceptamos entre 1 y 10 URLs https de TMDB o Cloudinary.
-function validImages(images) {
-  if (
-    !Array.isArray(images) ||
-    images.length === 0 ||
-    images.length > MAX_IMAGES
-  )
-    return false;
-  return images.every((u) => {
-    try {
-      const url = new URL(u);
-      return (
-        url.protocol === "https:" && ALLOWED_IMAGE_HOSTS.includes(url.hostname)
-      );
-    } catch {
-      return false;
-    }
-  });
-}
+import { validImages } from "@/lib/reviewImages";
 
 // GET /api/reviews            -> lista el feed
 // GET /api/reviews?mood=xxx   -> filtra por estado de ánimo
@@ -42,14 +20,20 @@ export async function GET(request) {
 }
 
 // POST /api/reviews  (solo admin)
-// body: { tmdb_id, review_text, soundtrack_embed_url, images: [url, ...] }
+// body: { tmdb_id, media_type: "movie"|"tv", review_text, soundtrack_embed_url, images: [url, ...], ig_post_id? }
+// Si viene ig_post_id (importación de Instagram), la reseña toma la fecha del post
+// y el post queda marcado como "publicado".
 // El orden de "images" es el orden del carrusel (la primera es la portada).
 export async function POST(request) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
   const body = await request.json();
-  const { tmdb_id, review_text, soundtrack_embed_url, images = [] } = body;
+  const { tmdb_id, review_text, soundtrack_embed_url, images = [], ig_post_id = null } = body;
+  const mediaType = body.media_type === "tv" ? "tv" : "movie";
+  if (ig_post_id !== null && !Number.isInteger(ig_post_id)) {
+    return NextResponse.json({ error: "ig_post_id inválido" }, { status: 400 });
+  }
 
   if (!tmdb_id || !review_text) {
     return NextResponse.json(
@@ -78,20 +62,38 @@ export async function POST(request) {
     );
   }
 
-  const movie = await getMovieDetails(tmdb_id);
+  const movie = await getMovieDetails(tmdb_id, mediaType);
   const mood = inferMood(movie.genre_ids, movie.keywords);
 
   // Una sola consulta: crea la reseña y sus imágenes juntas (o ninguna si algo falla).
+  // Fecha: la del post de IG si viene de una importación; si no, ahora.
+  let createdAt = new Date().toISOString();
+  if (ig_post_id !== null) {
+    const ig = await sql`SELECT posted_at FROM ig_posts WHERE id = ${ig_post_id} AND status = 'pendiente'`;
+    if (ig.length === 0) {
+      return NextResponse.json({ error: "Ese post de IG no existe o ya fue publicado/descartado" }, { status: 409 });
+    }
+    createdAt = ig[0].posted_at;
+  }
+
   const rows = await sql`
     WITH new_review AS (
       INSERT INTO reviews (
-        tmdb_id, title, poster_url, release_year, genres,
-        review_text, mood, soundtrack_embed_url
+        tmdb_id, media_type, title, poster_url, release_year, genres,
+        review_text, mood, soundtrack_embed_url, director, composer,
+        countries, runtime, created_at
       ) VALUES (
-        ${movie.tmdb_id}, ${movie.title}, ${movie.poster_url}, ${movie.release_year},
-        ${movie.genre_names}, ${review_text}, ${mood}, ${embedUrl}
+        ${movie.tmdb_id}, ${mediaType}, ${movie.title}, ${movie.poster_url}, ${movie.release_year},
+        ${movie.genre_names}, ${review_text}, ${mood}, ${embedUrl},
+        ${movie.director}, ${movie.composer},
+        ${movie.countries}, ${movie.runtime}, ${createdAt}
       )
       RETURNING *
+    ),
+    ig_done AS (
+      UPDATE ig_posts SET status = 'publicado', review_id = (SELECT id FROM new_review)
+      WHERE id = ${ig_post_id}
+      RETURNING id
     ),
     new_images AS (
       INSERT INTO review_images (review_id, image_url, position)
