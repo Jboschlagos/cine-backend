@@ -35,7 +35,7 @@ export default function ReviewGrid({ initial, query, total, mediaType = "movie" 
 
   return (
     <>
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {reviews.map((review) => (
           <ReviewCard key={review.id} review={review} />
         ))}

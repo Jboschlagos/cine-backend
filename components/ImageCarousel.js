@@ -19,7 +19,9 @@ export default function ImageCarousel({ images, alt }) {
   if (images.length === 0) return null;
 
   return (
-    <div className="relative">
+    // En 2 columnas (md+) el ancho se limita según el alto de la ventana para que el
+    // afiche 2:3 quepa completo bajo el header fijo (~65px): top-20 + 1rem de aire abajo.
+    <div className="relative w-full self-start md:sticky md:top-20 md:max-w-[calc((100svh_-_6rem)*2/3)] md:justify-self-center">
       <div ref={emblaRef} className="overflow-hidden">
         <div className="flex">
           {images.map((src, i) => (
