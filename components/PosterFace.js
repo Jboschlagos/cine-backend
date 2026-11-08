@@ -1,6 +1,6 @@
 // Lo que se ve dentro de una tarjeta de afiche (reseñas y Descubrir):
-// en reposo: afiche en blanco y negro + título abajo;
-// al pasar el mouse: toma color y aparece la mini ficha (estilo "Taller").
+// en reposo: afiche a color, un poco apagado (brightness-90) + título abajo;
+// al pasar el mouse: se ilumina al 100% y aparece la mini ficha (estilo "Taller").
 // (usa <span> y no <div>/<p> porque en Descubrir va dentro de un <button>)
 // rows = [["año", "2014"], ["dir.", "Nolan"], ...]  (las vacías no se muestran)
 export const POSTER_CARD_CLASS =
@@ -13,10 +13,10 @@ export default function PosterFace({ image, title, rows = [] }) {
         <img
           src={image}
           alt={title}
-          className="h-full w-full object-cover brightness-75 grayscale transition duration-500 group-hover:brightness-100 group-hover:grayscale-0"
+          className="h-full w-full object-cover brightness-90 transition duration-500 group-hover:brightness-100"
         />
       ) : (
-        <span className="flex h-full items-center justify-center font-display text-xs uppercase tracking-[0.2em] text-neutral-600">
+        <span className="flex h-full items-center justify-center font-display text-xs uppercase tracking-[0.2em] text-neutral-500">
           Sin afiche
         </span>
       )}
@@ -27,13 +27,13 @@ export default function PosterFace({ image, title, rows = [] }) {
       </span>
 
       {/* Mini ficha al pasar el mouse */}
-      <span className="absolute inset-0 flex flex-col justify-center gap-1 bg-black/80 p-4 font-mono text-[11px] leading-relaxed text-neutral-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
+      <span className="absolute inset-0 flex flex-col justify-center gap-1 bg-black/80 p-4 font-mono text-[11px] leading-relaxed text-neutral-200 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100">
         <span className="mb-2 block font-display text-base uppercase leading-tight tracking-[0.12em] text-white">{title}</span>
         {rows
           .filter(([, value]) => value)
           .map(([label, value]) => (
             <span key={label}>
-              <span className="text-neutral-500">{label}</span> {value}
+              <span className="text-neutral-400">{label}</span> {value}
             </span>
           ))}
       </span>

@@ -1,61 +1,83 @@
 import Link from "next/link";
 import ReviewGrid from "@/components/ReviewGrid";
 import MoodFilter from "@/components/MoodFilter";
-import SearchBox from "@/components/SearchBox";
+import BrowseHeader, { RIGHT_COLUMN_CLASS } from "@/components/BrowseHeader";
 import { getReviews } from "@/lib/reviews";
 import {
   readFilters,
+  readMediaType,
   readSearch,
   readSort,
   toReviewFilters,
   toQuery,
   extraParams,
+  mediaTypeParams,
   REVIEW_SEGMENTS,
   SERIES_SEGMENTS,
   REVIEW_SORTS,
   REVIEW_LABELS,
 } from "@/lib/filters";
 
-// Listado de reseñas con buscador, filtros, orden y "Ver más".
-// Lo usan Reseñas (mediaType="movie", en "/") y Series (mediaType="tv", en "/series").
-export default async function ReviewsIndex({ searchParams, mediaType = "movie", basePath = "/", heading, intro }) {
-  const isTv = mediaType === "tv";
-  const segments = isTv ? SERIES_SEGMENTS : REVIEW_SEGMENTS;
-  const noun = isTv ? ["serie", "series"] : ["reseña", "reseñas"];
+const SEGMENTS = { movie: REVIEW_SEGMENTS, tv: SERIES_SEGMENTS };
+
+// Listado de reseñas en "/" con selector Películas | Series (?tipo=serie),
+// buscador, filtros, orden y "Ver más". Misma cabecera que Descubrir.
+export default async function ReviewsIndex({ searchParams }) {
   const params = await searchParams;
+  const mediaType = readMediaType(params);
+  const isTv = mediaType === "tv";
+  const segments = SEGMENTS[mediaType];
+  const noun = isTv ? ["serie", "series"] : ["reseña", "reseñas"];
+  const typeParams = mediaTypeParams(mediaType); // {} o { tipo: "serie" }
   const active = readFilters(params, segments);
   const q = readSearch(params);
   const sort = readSort(params);
-  const extra = extraParams(q, sort);
+  // Lo que no es filtro pero se conserva en todos los links: búsqueda, orden y tipo.
+  const extra = { ...extraParams(q, sort), ...typeParams };
 
   const { reviews, total } = await getReviews(toReviewFilters(active), { q, sort, page: 1, mediaType });
   const hasFilters = Object.keys(active).length > 0 || q;
   const query = toQuery({ ...active, ...extra });
+  const href = (values) => {
+    const next = toQuery(values);
+    return next ? `/?${next}` : "/";
+  };
 
-  // Link que cambia solo el orden y mantiene filtros y búsqueda.
-  const sortHref = (key) => {
-    const next = toQuery({ ...active, ...extraParams(q, key) });
-    return next ? `${basePath}?${next}` : basePath;
+  // Link que cambia solo el orden y mantiene filtros, búsqueda y tipo.
+  const sortHref = (key) => href({ ...active, ...extraParams(q, key), ...typeParams });
+
+  // Link para cambiar de tipo: conserva búsqueda, orden y los filtros que apliquen al otro tipo.
+  const typeHref = (nextType) => {
+    const allowed = SEGMENTS[nextType];
+    const kept = Object.fromEntries(Object.entries(active).filter(([name]) => allowed.includes(name)));
+    return href({ ...kept, ...extraParams(q, sort), ...mediaTypeParams(nextType) });
   };
 
   return (
     <main>
-      {/* Mini introducción: solo texto, con mucho aire alrededor */}
-      <section className="mx-auto max-w-3xl px-4 pt-8 text-center sm:pt-12">
-        <h1 className="font-display text-lg font-normal uppercase leading-snug tracking-[0.25em] text-white sm:text-2xl">
-          {heading}
-        </h1>
-        <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-neutral-500 sm:text-sm">
-          {intro}
-        </p>
-      </section>
+      {/* Sin título visible (la cabecera parte directo, como en Descubrir).
+          El h1 queda solo para lectores de pantalla y buscadores. */}
+      <h1 className="sr-only">{isTv ? "Series" : "Reseñas"}</h1>
 
-      {/* Al buscar se conservan los filtros y el orden */}
-      <SearchBox action={basePath} q={q} keep={{ ...active, ...extraParams("", sort) }} />
-      <MoodFilter basePath={basePath} active={active} extra={extra} segments={segments} labels={REVIEW_LABELS} />
+      {/* Al buscar se conservan los filtros, el orden y el tipo */}
+      <BrowseHeader
+        type={mediaType}
+        typeHref={typeHref}
+        search={{ action: "/", q, keep: { ...active, ...extraParams("", sort), ...typeParams } }}
+      >
+        <MoodFilter
+          basePath="/"
+          active={active}
+          extra={extra}
+          segments={segments}
+          labels={REVIEW_LABELS}
+          className={RIGHT_COLUMN_CLASS}
+          oneLineXl
+        />
+      </BrowseHeader>
 
       {/* Contador + orden */}
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-4 font-display text-[10px] uppercase tracking-[0.2em] text-neutral-600">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-4 font-display text-[10px] uppercase tracking-[0.2em] text-neutral-500">
         <span>
           {total} {total === 1 ? noun[0] : noun[1]}
           {q && <> para “{q}”</>}
@@ -76,11 +98,11 @@ export default async function ReviewsIndex({ searchParams, mediaType = "movie", 
       </div>
 
       {reviews.length === 0 ? (
-        <p className="p-4 text-center font-display text-xs uppercase tracking-[0.15em] text-neutral-500">
+        <p className="p-4 text-center font-display text-xs uppercase tracking-[0.15em] text-neutral-400">
           {hasFilters ? `No hay ${noun[1]} con esa combinación. Prueba con otra.` : `Todavía no hay ${noun[1]}.`}
         </p>
       ) : (
-        // "key" hace que la grilla parta de cero al cambiar filtros, búsqueda u orden
+        // "key" hace que la grilla parta de cero al cambiar tipo, filtros, búsqueda u orden
         <ReviewGrid key={query} initial={reviews} query={query} total={total} mediaType={mediaType} />
       )}
     </main>

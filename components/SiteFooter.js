@@ -1,53 +1,60 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
 import { InstagramIcon, GitHubIcon, LinkedInIcon } from "@/components/icons";
 
 const linkClass = "transition-colors hover:text-white";
 
+// Footer compacto, espejo del navbar (SiteHeader): mismo ancho (max-w-6xl px-4),
+// misma línea (border neutral-900) y la misma tipografía en mayúsculas espaciadas.
+// En celular va todo apilado y centrado; desde sm, izquierda y derecha.
+// pb-16 deja libre el espacio del botón minimizado del reproductor (abajo a la derecha);
+// cuando la barra está desplegada, SoundtrackPlayer agrega su propio espacio al final.
 export default function SiteFooter() {
-  return (
-    // mb-24 deja espacio para la barra del reproductor
-    <footer className="mb-24 mt-20 border-t border-neutral-900 px-4 py-12 text-center font-display text-[11px] uppercase tracking-[0.15em] text-neutral-500">
-      <div className="mx-auto grid max-w-4xl gap-10 sm:grid-cols-3">
-        <div className="flex flex-col items-center gap-2">
-          <h2 className="tracking-[0.3em] text-neutral-700">{SITE.name}</h2>
-          <p>Reseñas, afiches y bandas sonoras</p>
-          <a href={SITE.instagram} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 ${linkClass}`}>
-            <InstagramIcon className="h-4 w-4" /> @jboschlagos
-          </a>
-        </div>
+  const external = { target: "_blank", rel: "noopener noreferrer" };
 
-        <div className="flex flex-col items-center gap-2">
-          <h2 className="tracking-[0.3em] text-neutral-700">Hecho por Jorge</h2>
-          <div className="flex gap-4">
-            <a href={SITE.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className={linkClass}>
+  return (
+    <footer className="mt-12 border-t border-neutral-900 font-display text-xs uppercase tracking-[0.15em] text-neutral-400">
+      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pb-16 pt-4">
+        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-4">
+            <span>Hecho por Jorge</span>
+            <a href={SITE.instagram} {...external} aria-label="Instagram" className={linkClass}>
+              <InstagramIcon className="h-4 w-4" />
+            </a>
+            <a href={SITE.github} {...external} aria-label="GitHub" className={linkClass}>
               <GitHubIcon className="h-4 w-4" />
             </a>
-            <a href={SITE.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className={linkClass}>
+            <a href={SITE.linkedin} {...external} aria-label="LinkedIn" className={linkClass}>
               <LinkedInIcon className="h-4 w-4" />
             </a>
+            <Link href="/contacto" className={linkClass}>
+              Escríbeme
+            </Link>
           </div>
-          <Link href="/contacto" className={linkClass}>
-            Escríbeme
-          </Link>
-        </div>
 
-        <div className="flex flex-col items-center gap-2 normal-case tracking-normal">
-          <h2 className="uppercase tracking-[0.3em] text-neutral-700">Datos</h2>
-          {/* TMDB pide mostrar su logo y este aviso: ver https://www.themoviedb.org/about/logos-attribution */}
-          <a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer" className={`font-sans text-xs ${linkClass}`}>
-            Este sitio usa la API de TMDB, pero no está respaldado ni certificado por TMDB.
-          </a>
-          <p className="font-sans text-xs">
-            Streaming: <a href="https://www.justwatch.com" target="_blank" rel="noopener noreferrer" className={linkClass}>JustWatch</a>
-            {" · "}Música: <a href="https://musicbrainz.org" target="_blank" rel="noopener noreferrer" className={linkClass}>MusicBrainz</a>
+          <p>
+            Datos:{" "}
+            <a href="https://www.themoviedb.org" {...external} className={linkClass}>TMDB</a>
+            {" · "}
+            <a href="https://www.justwatch.com" {...external} className={linkClass}>JustWatch</a>
+            {" · "}
+            <a href="https://musicbrainz.org" {...external} className={linkClass}>MusicBrainz</a>
           </p>
         </div>
-      </div>
 
-      <p className="mx-auto mt-10 max-w-4xl border-t border-neutral-900 pt-6 text-neutral-600">
-        {SITE.name} es un experimento — se arma y se desarma sobre la marcha.
-      </p>
+        <div className="flex flex-col items-center gap-1 text-center text-[11px] normal-case tracking-normal text-neutral-500 sm:flex-row sm:justify-between sm:text-left">
+          {/* TMDB pide mostrar su logo y este aviso: ver https://www.themoviedb.org/about/logos-attribution
+              El logo es el archivo oficial (public/tmdb-logo.svg), sin cambiarle el color, y más chico que el nuestro. */}
+          <div className="flex flex-col items-center gap-2 sm:flex-row">
+            <a href="https://www.themoviedb.org" {...external} aria-label="The Movie Database (TMDB)" className="shrink-0">
+              <Image src="/tmdb-logo.svg" alt="TMDB" width={37} height={16} unoptimized className="h-4 w-auto" />
+            </a>
+            <p>Este sitio usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
+          </div>
+          <p>{SITE.name} es un experimento — se arma y se desarma sobre la marcha.</p>
+        </div>
+      </div>
     </footer>
   );
 }

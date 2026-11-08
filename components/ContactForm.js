@@ -32,7 +32,7 @@ export default function ContactForm() {
   }
 
   if (status === "sent") {
-    return <p className="text-center text-neutral-300">¡Gracias! Tu mensaje llegó. Te respondo apenas pueda.</p>;
+    return <p className="text-center text-neutral-200">¡Gracias! Tu mensaje llegó. Te respondo apenas pueda.</p>;
   }
 
   return (

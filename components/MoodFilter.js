@@ -16,7 +16,11 @@ export default function MoodFilter({
   segments = ["mood", "origin", "era", "length"],
   extra = {},
   labels = {},
+  className = "", // clases extra (ej. en Descubrir va en la columna derecha desde lg)
+  oneLineXl = false, // desde 1280px: letra 13px y tracking 0.15em para que la frase quepa en una línea (Descubrir)
 }) {
+  const fitPhrase = oneLineXl ? "xl:text-[13px] xl:tracking-[0.15em]" : "";
+  const fitButton = oneLineXl ? "xl:tracking-[0.15em]" : "";
   // Texto de una opción; "labels" permite cambiarlo en una página, ej. { mood: { musical: "con banda sonora" } }
   const label = (name, key) => labels[name]?.[key] ?? FILTERS[name].options[key];
   const boxRef = useRef(null);
@@ -53,7 +57,7 @@ export default function MoodFilter({
   };
 
   const optionClass = (isActive) =>
-    `block py-0.5 transition-colors ${isActive ? "text-white" : "text-neutral-500 hover:text-white"}`;
+    `block py-0.5 transition-colors ${isActive ? "text-white" : "text-neutral-400 hover:text-white"}`;
 
   const open = openName ? FILTERS[openName] : null;
   const anyActive = segments.some((name) => active[name]);
@@ -61,8 +65,8 @@ export default function MoodFilter({
   const hrefClear = extraQuery ? `${basePath}?${extraQuery}` : basePath;
 
   return (
-    <div ref={boxRef} className="relative mx-auto max-w-3xl px-4 pb-6 pt-5 text-center">
-      <p className="font-display text-sm uppercase leading-loose tracking-[0.2em] text-neutral-500 sm:text-base">
+    <div ref={boxRef} className={`relative mx-auto max-w-3xl px-4 pb-6 pt-5 text-center ${className}`}>
+      <p className={`font-display text-sm uppercase leading-loose tracking-[0.2em] text-neutral-400 sm:text-base ${fitPhrase}`}>
         {prefix}{" "}
         {segments.map((name) => {
           const value = active[name];
@@ -73,8 +77,8 @@ export default function MoodFilter({
                 onClick={() => setOpenName(openName === name ? null : name)}
                 aria-expanded={openName === name}
                 aria-controls="filter-panel"
-                className={`border-b pb-0.5 uppercase tracking-[0.2em] transition-colors ${
-                  value ? "border-white text-white" : "border-neutral-700 text-neutral-600 hover:text-neutral-300"
+                className={`border-b pb-0.5 uppercase tracking-[0.2em] transition-colors ${fitButton} ${
+                  value ? "border-white text-white" : "border-neutral-700 text-neutral-500 hover:text-neutral-200"
                 }`}
               >
                 {value ? label(name, value) : FILTERS[name].all}{" "}
@@ -86,7 +90,7 @@ export default function MoodFilter({
       </p>
 
       {anyActive && (
-        <Link href={hrefClear} className="mt-1 inline-block font-display text-[10px] uppercase tracking-[0.25em] text-neutral-600 hover:text-white">
+        <Link href={hrefClear} className="mt-1 inline-block font-display text-[10px] uppercase tracking-[0.25em] text-neutral-500 hover:text-white">
           Limpiar filtros
         </Link>
       )}
@@ -100,7 +104,7 @@ export default function MoodFilter({
             {(open.groups ?? [{ title: null, keys: Object.keys(open.options) }]).map((group, i) => (
               <div key={group.title ?? i} className={open.groups ? "" : "columns-2 gap-x-6"}>
                 {group.title && (
-                  <h3 className="mb-1 text-[9px] tracking-[0.3em] text-neutral-700">{group.title}</h3>
+                  <h3 className="mb-1 text-[9px] tracking-[0.3em] text-neutral-500">{group.title}</h3>
                 )}
                 {group.keys.map((key) => (
                   <Link key={key} href={hrefWith(openName, key)} onClick={closePanel} className={optionClass(active[openName] === key)}>

@@ -48,10 +48,10 @@ export default async function ReviewPage({ params }) {
           <h1 className="text-2xl font-medium">
             {review.title}{" "}
             {review.release_year && (
-              <span className="text-neutral-400">({review.release_year})</span>
+              <span className="text-neutral-300">({review.release_year})</span>
             )}
           </h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <p className="mt-1 text-sm text-neutral-300">
             {review.media_type === "tv" && "Serie · "}
             {MOOD_LABELS[review.mood]}
             {review.genres?.length > 0 && ` · ${review.genres.join(", ")}`}
@@ -85,11 +85,11 @@ export default async function ReviewPage({ params }) {
               <li key={c.id} className="rounded bg-neutral-900 p-3">
                 <p className="text-sm">
                   <span className="font-medium">{c.name}</span>{" "}
-                  <span className="text-neutral-500">
+                  <span className="text-neutral-400">
                     · {new Date(c.created_at).toLocaleDateString("es-CL")}
                   </span>
                 </p>
-                <p className="mt-1 whitespace-pre-line text-sm text-neutral-300">{c.text}</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-neutral-200">{c.text}</p>
               </li>
             ))}
           </ul>

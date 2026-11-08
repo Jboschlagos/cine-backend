@@ -8,8 +8,8 @@ import { InstagramIcon } from "@/components/icons";
 import Logo from "@/components/Logo";
 
 const LINKS = [
+  // Series está dentro de Reseñas (/?tipo=serie), con el selector Películas | Series.
   { href: "/", label: "Reseñas" },
-  { href: "/series", label: "Series" },
   { href: "/discover", label: "Descubrir" },
   { href: "/sobre-mi", label: "Sobre mí" },
 ];
@@ -35,7 +35,7 @@ export default function SiteHeader() {
       onClick={closeMenu}
       aria-current={isActive(href) ? "page" : undefined}
       className={`text-xs tracking-[0.15em] transition-colors ${
-        isActive(href) ? "text-white" : "text-neutral-500 hover:text-white"
+        isActive(href) ? "text-white" : "text-neutral-400 hover:text-white"
       }`}
     >
       {label}
@@ -49,7 +49,7 @@ export default function SiteHeader() {
       rel="noopener noreferrer"
       onClick={closeMenu}
       aria-label="Instagram"
-      className="text-neutral-500 transition-colors hover:text-white"
+      className="text-neutral-400 transition-colors hover:text-white"
     >
       <InstagramIcon className="h-4 w-4" />
     </a>
@@ -76,7 +76,7 @@ export default function SiteHeader() {
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"
-          className="text-2xl leading-none text-neutral-400 hover:text-white md:hidden"
+          className="text-2xl leading-none text-neutral-300 hover:text-white md:hidden"
         >
           {menuOpen ? "×" : "☰"}
         </button>

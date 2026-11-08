@@ -77,9 +77,9 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
             <div className="flex items-start justify-between gap-4">
               <h2 className="text-xl font-medium">
                 {sheet ? sheet.title : "Cargando..."}{" "}
-                {sheet?.release_year && <span className="text-neutral-400">({sheet.release_year})</span>}
+                {sheet?.release_year && <span className="text-neutral-300">({sheet.release_year})</span>}
               </h2>
-              <button type="button" onClick={close} aria-label="Cerrar" className="text-2xl leading-none text-neutral-400 hover:text-white">
+              <button type="button" onClick={close} aria-label="Cerrar" className="text-2xl leading-none text-neutral-300 hover:text-white">
                 ×
               </button>
             </div>
@@ -96,14 +96,14 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                     <div className="mx-auto w-full max-w-[240px] md:max-w-none">
                       <ImageCarousel images={sheet.posters} alt={sheet.title} />
                       {sheet.posters.length > 1 && (
-                        <p className="mt-2 text-center text-xs text-neutral-500">
+                        <p className="mt-2 text-center text-xs text-neutral-400">
                           {sheet.posters.length} afiches · desliza para ver más
                         </p>
                       )}
                     </div>
                   )}
                   <div className="flex flex-col gap-4">
-                    <p className="text-sm text-neutral-400">
+                    <p className="text-sm text-neutral-300">
                       {[
                         isTv && sheet.seasons && `${sheet.seasons} ${sheet.seasons === 1 ? "temporada" : "temporadas"}`,
                         sheet.runtime && (isTv ? `${formatRuntime(sheet.runtime)} por episodio` : formatRuntime(sheet.runtime)),
@@ -120,13 +120,13 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                       {sheet.directors.length > 0 && (
                         <>
-                          <dt className="text-neutral-400">{isTv ? "Creada por" : "Dirección"}</dt>
+                          <dt className="text-neutral-300">{isTv ? "Creada por" : "Dirección"}</dt>
                           <dd>{sheet.directors.join(", ")}</dd>
                         </>
                       )}
                       {sheet.cast.length > 0 && (
                         <>
-                          <dt className="text-neutral-400">Reparto</dt>
+                          <dt className="text-neutral-300">Reparto</dt>
                           <dd>{sheet.cast.join(", ")}</dd>
                         </>
                       )}
@@ -141,10 +141,10 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-neutral-500">No está en streaming en Chile por ahora.</p>
+                        <p className="text-sm text-neutral-400">No está en streaming en Chile por ahora.</p>
                       )}
                       {sheet.providers.link && (
-                        <a href={sheet.providers.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs text-neutral-400 underline">
+                        <a href={sheet.providers.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs text-neutral-300 underline">
                           Ver todas las opciones (datos de JustWatch)
                         </a>
                       )}
@@ -160,16 +160,16 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                     allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
                   />
                 ) : (
-                  <p className="text-sm text-neutral-500">No encontramos tráiler para esta {isTv ? "serie" : "película"}.</p>
+                  <p className="text-sm text-neutral-400">No encontramos tráiler para esta {isTv ? "serie" : "película"}.</p>
                 )}
 
                 {showSoundtrack && (
                   <section>
                     <h3 className="mb-2 font-medium">Banda sonora</h3>
-                    {soundtrack === undefined && <p className="text-sm text-neutral-500">Buscando banda sonora...</p>}
+                    {soundtrack === undefined && <p className="text-sm text-neutral-400">Buscando banda sonora...</p>}
                     {soundtrack && (
                       <>
-                        <p className="mb-2 text-sm text-neutral-400">
+                        <p className="mb-2 text-sm text-neutral-300">
                           {soundtrack.album}
                           {soundtrack.artist && ` — ${soundtrack.artist}`}
                         </p>
@@ -179,20 +179,20 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                               <span>
                                 {i + 1}. {t.title}
                                 {t.artist && t.artist !== soundtrack.artist && (
-                                  <span className="text-neutral-500"> — {t.artist}</span>
+                                  <span className="text-neutral-400"> — {t.artist}</span>
                                 )}
                               </span>
-                              <span className="text-neutral-500">{formatLength(t.length)}</span>
+                              <span className="text-neutral-400">{formatLength(t.length)}</span>
                             </li>
                           ))}
                         </ol>
-                        <a href={soundtrack.url} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-500 underline">
+                        <a href={soundtrack.url} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 underline">
                           Fuente: MusicBrainz
                         </a>
                       </>
                     )}
                     {soundtrack === null && (
-                      <p className="text-sm text-neutral-500">No encontramos el listado de canciones.</p>
+                      <p className="text-sm text-neutral-400">No encontramos el listado de canciones.</p>
                     )}
                     <a
                       href={spotifySearch}

@@ -4,7 +4,7 @@ export const metadata = { title: "Sobre mí" };
 export default function AboutPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-10 text-center font-display text-sm uppercase tracking-[0.35em] text-neutral-500">
+      <h1 className="mb-10 text-center font-display text-sm uppercase tracking-[0.35em] text-neutral-400">
         Sobre mí
       </h1>
       <div className="flex flex-col gap-6 text-lg leading-relaxed text-neutral-200">

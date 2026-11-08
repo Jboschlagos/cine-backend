@@ -48,7 +48,7 @@ export default function ReviewGrid({ initial, query, total, mediaType = "movie" 
             type="button"
             onClick={loadMore}
             disabled={loading}
-            className="border-b border-neutral-600 pb-1 font-display text-xs uppercase tracking-[0.2em] text-neutral-400 transition-colors hover:border-white hover:text-white disabled:opacity-50"
+            className="border-b border-neutral-600 pb-1 font-display text-xs uppercase tracking-[0.2em] text-neutral-300 transition-colors hover:border-white hover:text-white disabled:opacity-50"
           >
             {loading ? "Cargando..." : "Ver más"}
           </button>

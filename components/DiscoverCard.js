@@ -7,7 +7,8 @@ export default function DiscoverCard({ movie }) {
   const mood = MOOD_LABELS[inferMood(movie.genre_ids ?? [])];
 
   return (
-    <MovieSheet tmdbId={movie.tmdb_id} className={POSTER_CARD_CLASS}>
+    // media_type = "movie" o "tv": la ficha pide /movie o /tv según corresponda
+    <MovieSheet tmdbId={movie.tmdb_id} mediaType={movie.media_type} className={POSTER_CARD_CLASS}>
       <PosterFace
         image={movie.poster_url}
         title={movie.title}
