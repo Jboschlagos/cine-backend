@@ -19,6 +19,9 @@ export default function SoundtrackPlayer() {
 
   // El azar se elige en el navegador (no en el servidor) para que
   // el HTML del servidor y el del navegador coincidan.
+  // setState en el efecto es intencional: el valor solo puede existir después de la
+  // hidratación, así que el primer render va vacío y este efecto lo llena una vez.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setIndex(randomIndex()), []);
 
   if (closed || index === null) return null;

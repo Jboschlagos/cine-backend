@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/site";
@@ -16,10 +16,11 @@ const LINKS = [
 
 export default function SiteHeader() {
   const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  // Al cambiar de página, cerramos el menú del celular.
-  useEffect(() => setMenuOpen(false), [pathname]);
+  // Guardamos la ruta donde se abrió el menú del celular: si cambias de
+  // página deja de coincidir y el menú queda cerrado, sin useEffect.
+  const [openAt, setOpenAt] = useState(null);
+  const menuOpen = openAt === pathname;
+  const closeMenu = () => setOpenAt(null);
 
   // "Reseñas" queda marcado también cuando estás dentro de una reseña.
   const isActive = (href) =>
@@ -31,6 +32,7 @@ export default function SiteHeader() {
     <Link
       key={href}
       href={href}
+      onClick={closeMenu}
       aria-current={isActive(href) ? "page" : undefined}
       className={`text-xs tracking-[0.15em] transition-colors ${
         isActive(href) ? "text-white" : "text-neutral-500 hover:text-white"
@@ -45,6 +47,7 @@ export default function SiteHeader() {
       href={SITE.instagram}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={closeMenu}
       aria-label="Instagram"
       className="text-neutral-500 transition-colors hover:text-white"
     >
@@ -69,7 +72,7 @@ export default function SiteHeader() {
         {/* Botón ☰ solo en celular */}
         <button
           type="button"
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => setOpenAt(menuOpen ? null : pathname)}
           aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
           aria-expanded={menuOpen}
           aria-controls="mobile-menu"

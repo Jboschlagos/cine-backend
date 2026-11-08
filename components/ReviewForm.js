@@ -52,28 +52,37 @@ export default function ReviewForm({ prefill = null, existing = null }) {
   const [soundtrack, setSoundtrack] = useState(existing?.soundtrack ?? "");
   const [mood, setMood] = useState(existing?.mood ?? "");
   const [date, setDate] = useState(existing ? toDateInput(existing.created_at) : "");
-  const [busy, setBusy] = useState(""); // "", "buscando", "subiendo", "publicando" o "Subiendo fotos 2/8"
+  // Con prefill de IG buscamos en TMDB al abrir, así que partimos ya en "buscando".
+  const autoSearch = prefill?.title?.trim().length >= 2;
+  const [busy, setBusy] = useState(autoSearch ? "buscando" : ""); // "", "buscando", "subiendo", "publicando" o "Subiendo fotos 2/8"
   const [error, setError] = useState("");
   const uploadedRef = useRef({}); // fotos de IG ya subidas: { "ig:...": "https://res.cloudinary..." }
 
   const isTv = mediaType === "tv";
   const noun = isTv ? "serie" : "película";
 
-  // Paso 1: buscar en TMDB (películas o series)
-  async function runSearch(text, type = mediaType) {
-    if (text.trim().length < 2) return;
-    setBusy("buscando");
-    setError("");
+  // Paso 1: buscar en TMDB (películas o series).
+  // fetchSearch no toca el estado: devuelve la lista, o null si TMDB falla.
+  async function fetchSearch(text, type) {
     const params = new URLSearchParams({ q: text.trim(), type });
     const res = await fetch(`/api/movies/search?${params}`);
-    setBusy("");
-    if (!res.ok) return setError("No se pudo buscar en TMDB");
+    if (!res.ok) return null;
     let list = await res.json();
     // Si sabemos el año (del post de IG), los que coinciden van primero
     if (prefill?.year) {
       const y = String(prefill.year);
       list = [...list.filter((m) => m.release_year === y), ...list.filter((m) => m.release_year !== y)];
     }
+    return list;
+  }
+
+  async function runSearch(text, type = mediaType) {
+    if (text.trim().length < 2) return;
+    setBusy("buscando");
+    setError("");
+    const list = await fetchSearch(text, type);
+    setBusy("");
+    if (!list) return setError("No se pudo buscar en TMDB");
     setResults(list);
   }
 
@@ -82,10 +91,23 @@ export default function ReviewForm({ prefill = null, existing = null }) {
     runSearch(query);
   }
 
-  // Al abrir: con prefill buscamos en TMDB; al editar traemos los afiches de TMDB como opciones
+  // Al abrir: con prefill buscamos en TMDB; al editar traemos los afiches de TMDB como opciones.
+  // El estado se actualiza solo cuando llega la respuesta; "ignore" descarta respuestas
+  // viejas si el formulario se desmonta (o si React corre el efecto dos veces en desarrollo).
   useEffect(() => {
-    if (prefill?.title) runSearch(prefill.title);
+    let ignore = false;
+    if (autoSearch) {
+      fetchSearch(prefill.title, mediaType).then((list) => {
+        if (ignore) return;
+        setBusy("");
+        if (list) setResults(list);
+        else setError("No se pudo buscar en TMDB");
+      });
+    }
     if (existing) loadTmdbPosters(existing.tmdb_id, existing.media_type);
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

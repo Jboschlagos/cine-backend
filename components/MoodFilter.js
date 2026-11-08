@@ -19,17 +19,22 @@ export default function MoodFilter({
 }) {
   // Texto de una opción; "labels" permite cambiarlo en una página, ej. { mood: { musical: "con banda sonora" } }
   const label = (name, key) => labels[name]?.[key] ?? FILTERS[name].options[key];
-  const [openName, setOpenName] = useState(null);
   const boxRef = useRef(null);
   const pathname = usePathname();
 
-  // Cerrar al navegar, al hacer clic afuera o con Esc.
-  const activeKey = JSON.stringify(active);
-  useEffect(() => setOpenName(null), [pathname, activeKey]);
+  // Cerrar al navegar o al cambiar un filtro: guardamos en qué "vista" (ruta + filtros)
+  // se abrió el panel; si la vista cambia deja de coincidir y queda cerrado, sin useEffect.
+  const viewKey = pathname + JSON.stringify(active);
+  const [openState, setOpenState] = useState(null); // { name, at: viewKey }
+  const openName = openState?.at === viewKey ? openState.name : null;
+  const setOpenName = (name) => setOpenState(name ? { name, at: viewKey } : null);
+  const closePanel = () => setOpenName(null);
+
+  // Cerrar al hacer clic afuera o con Esc.
   useEffect(() => {
     if (!openName) return;
-    const onClick = (e) => !boxRef.current?.contains(e.target) && setOpenName(null);
-    const onKey = (e) => e.key === "Escape" && setOpenName(null);
+    const onClick = (e) => !boxRef.current?.contains(e.target) && setOpenState(null);
+    const onKey = (e) => e.key === "Escape" && setOpenState(null);
     document.addEventListener("mousedown", onClick);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -65,7 +70,7 @@ export default function MoodFilter({
             <span key={name}>
               <button
                 type="button"
-                onClick={() => setOpenName((o) => (o === name ? null : name))}
+                onClick={() => setOpenName(openName === name ? null : name)}
                 aria-expanded={openName === name}
                 aria-controls="filter-panel"
                 className={`border-b pb-0.5 uppercase tracking-[0.2em] transition-colors ${
@@ -98,7 +103,7 @@ export default function MoodFilter({
                   <h3 className="mb-1 text-[9px] tracking-[0.3em] text-neutral-700">{group.title}</h3>
                 )}
                 {group.keys.map((key) => (
-                  <Link key={key} href={hrefWith(openName, key)} className={optionClass(active[openName] === key)}>
+                  <Link key={key} href={hrefWith(openName, key)} onClick={closePanel} className={optionClass(active[openName] === key)}>
                     {label(openName, key)}
                   </Link>
                 ))}
@@ -107,6 +112,7 @@ export default function MoodFilter({
           </div>
           <Link
             href={hrefWith(openName, null)}
+            onClick={closePanel}
             className={`mt-3 border-t border-neutral-900 pt-2 text-center font-display text-[11px] uppercase tracking-[0.15em] ${optionClass(!active[openName])}`}
           >
             {open.all}
