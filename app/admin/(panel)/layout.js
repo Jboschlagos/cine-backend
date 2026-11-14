@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "@/components/LogoutButton";
+import { igImportAvailable } from "@/lib/instagram";
 
 export default async function AdminLayout({ children }) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -14,7 +15,10 @@ export default async function AdminLayout({ children }) {
         <nav className="flex items-center gap-4 text-sm text-neutral-400">
           <span>Panel admin</span>
           <Link href="/admin" className="hover:text-white">Nueva reseña</Link>
-          <Link href="/admin/importar" className="hover:text-white">Importar de IG</Link>
+          {/* Solo en tu PC: en Vercel no existe la carpeta de la exportación */}
+          {igImportAvailable() && (
+            <Link href="/admin/importar" className="hover:text-white">Importar de IG</Link>
+          )}
         </nav>
         <LogoutButton />
       </div>

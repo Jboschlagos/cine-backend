@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { SITE } from "@/lib/site";
 import { InstagramIcon } from "@/components/icons";
 import Logo from "@/components/Logo";
+import AdminLink from "@/components/AdminLink";
 
 const LINKS = [
   // Series está dentro de Reseñas (/?tipo=serie), con el selector Películas | Series.
@@ -28,19 +29,28 @@ export default function SiteHeader() {
       ? pathname === "/" || pathname.startsWith("/reviews")
       : pathname.startsWith(href);
 
+  // Mismo estilo para todos los links del menú (incluido "Admin").
+  const linkClass = (href) =>
+    `text-xs tracking-[0.15em] transition-colors ${
+      isActive(href) ? "text-white" : "text-neutral-400 hover:text-white"
+    }`;
+
   const links = LINKS.map(({ href, label }) => (
     <Link
       key={href}
       href={href}
       onClick={closeMenu}
       aria-current={isActive(href) ? "page" : undefined}
-      className={`text-xs tracking-[0.15em] transition-colors ${
-        isActive(href) ? "text-white" : "text-neutral-400 hover:text-white"
-      }`}
+      className={linkClass(href)}
     >
       {label}
     </Link>
   ));
+
+  // Solo se ve con tu sesión iniciada (ver components/AdminLink.js).
+  const adminLink = (
+    <AdminLink onClick={closeMenu} active={isActive("/admin")} className={linkClass("/admin")} />
+  );
 
   const instagram = (
     <a
@@ -73,6 +83,7 @@ export default function SiteHeader() {
         {/* Derecha, en pantallas de 768px o más ("md") */}
         <div className="hidden items-center gap-6 md:flex">
           {links}
+          {adminLink}
           {instagram}
         </div>
 
@@ -93,6 +104,7 @@ export default function SiteHeader() {
       {menuOpen && (
         <div id="mobile-menu" className="flex flex-col gap-5 border-t border-neutral-900 px-4 py-6 md:hidden">
           {links}
+          {adminLink}
           {instagram}
         </div>
       )}

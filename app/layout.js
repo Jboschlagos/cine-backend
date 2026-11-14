@@ -3,7 +3,7 @@ import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import SoundtrackPlayer from "@/components/SoundtrackPlayer";
-import { SITE } from "@/lib/site";
+import { SITE, OPEN_GRAPH_BASE } from "@/lib/site";
 
 // next/font descarga las fuentes al compilar y las sirve desde tu propio sitio.
 const oswald = Oswald({ subsets: ["latin"], variable: "--font-oswald" });
@@ -24,10 +24,9 @@ export const metadata = {
   description: SITE.description,
   // Open Graph: lo que leen WhatsApp, Facebook e Instagram al compartir un link.
   openGraph: {
+    ...OPEN_GRAPH_BASE,
     title: defaultTitle,
     description: SITE.description,
-    siteName: SITE.name,
-    locale: "es_CL",
     type: "website",
   },
   // Lo mismo para X/Twitter; "summary_large_image" = vista previa con imagen grande.

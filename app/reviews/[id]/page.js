@@ -8,6 +8,56 @@ import { toEmbedUrl } from "@/lib/embed";
 import ImageCarousel from "@/components/ImageCarousel";
 import CommentForm from "@/components/CommentForm";
 import MovieSheet from "@/components/MovieSheet";
+import { getReview, getReviewImages } from "@/lib/reviews";
+import { toShareImage } from "@/lib/reviewImages";
+import { OPEN_GRAPH_BASE } from "@/lib/site";
+
+// Si no hay imágenes guardadas, usamos el afiche de TMDB como respaldo.
+function withPosterFallback(images, review) {
+  if (images.length > 0) return images;
+  return review.poster_url ? [review.poster_url] : [];
+}
+
+// "Una película preciosa sobre…" : primeras ~150 letras, sin cortar palabras.
+function excerpt(text, max = 150) {
+  const clean = (text ?? "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s.,;:—-]+$/, "")}…`;
+}
+
+// Vista previa al compartir esta reseña: título, extracto y su primera imagen.
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  if (!/^\d+$/.test(id)) notFound();
+
+  // Mismas funciones que la página: gracias a cache() no se consulta dos veces.
+  const [review, images] = await Promise.all([getReview(id), getReviewImages(id)]);
+  if (!review) notFound();
+
+  const description = excerpt(review.review_text);
+  const cover = withPosterFallback(images, review)[0];
+  const image = cover ? [{ ...toShareImage(cover), alt: review.title }] : undefined;
+
+  return {
+    title: review.title, // con el template del layout queda "Película · Reducido"
+    description,
+    openGraph: {
+      ...OPEN_GRAPH_BASE,
+      title: review.title,
+      description,
+      type: "article",
+      url: `/reviews/${review.id}`,
+      ...(image && { images: image }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: review.title,
+      description,
+      ...(image && { images: image }),
+    },
+  };
+}
 
 // Página pública de una reseña: /reviews/123
 export default async function ReviewPage({ params }) {
@@ -16,24 +66,17 @@ export default async function ReviewPage({ params }) {
 
   // Las consultas van en paralelo para que cargue más rápido.
   // session = tu sesión de admin (null para cualquier visitante).
-  const [reviewRows, images, comments, session, igRows] = await Promise.all([
-    sql`SELECT * FROM reviews WHERE id = ${id}`,
-    sql`SELECT image_url FROM review_images WHERE review_id = ${id} ORDER BY position ASC`,
+  const [review, images, comments, session, igRows] = await Promise.all([
+    getReview(id),
+    getReviewImages(id),
     sql`SELECT * FROM comments WHERE review_id = ${id} ORDER BY created_at ASC`,
     auth.api.getSession({ headers: await headers() }),
     sql`SELECT 1 FROM ig_posts WHERE review_id = ${id}`,
   ]);
 
-  const review = reviewRows[0];
   if (!review) notFound();
 
-  // Si no hay imágenes guardadas, usamos el afiche de TMDB como respaldo.
-  const imageUrls =
-    images.length > 0
-      ? images.map((img) => img.image_url)
-      : review.poster_url
-        ? [review.poster_url]
-        : [];
+  const imageUrls = withPosterFallback(images, review);
 
   const embedUrl = toEmbedUrl(review.soundtrack_embed_url);
   const isSpotify = embedUrl?.includes("spotify.com");
