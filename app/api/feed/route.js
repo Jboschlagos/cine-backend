@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getReviews } from "@/lib/reviews";
 import {
   readFilters,
+  readNameFilters,
   readSearch,
   readSort,
   toReviewFilters,
@@ -9,7 +10,7 @@ import {
   SERIES_SEGMENTS,
 } from "@/lib/filters";
 
-// GET /api/feed?mood=tension&q=alien&orden=anio&page=2[&tipo=serie]  (público)
+// GET /api/feed?mood=tension&q=alien&orden=anio&page=2[&tipo=serie][&director=...&actor=...]  (público)
 // Lo usa el botón "Ver más" de Reseñas y de Series.
 export async function GET(request) {
   const params = Object.fromEntries(new URL(request.url).searchParams);
@@ -21,7 +22,7 @@ export async function GET(request) {
   const mediaType = params.tipo === "serie" ? "tv" : "movie";
   const active = readFilters(params, mediaType === "tv" ? SERIES_SEGMENTS : REVIEW_SEGMENTS);
   try {
-    const data = await getReviews(toReviewFilters(active), {
+    const data = await getReviews(toReviewFilters(active, readNameFilters(params)), {
       q: readSearch(params),
       sort: readSort(params),
       page,

@@ -80,12 +80,12 @@ export async function POST(request) {
     WITH new_review AS (
       INSERT INTO reviews (
         tmdb_id, media_type, title, poster_url, release_year, genres,
-        review_text, mood, soundtrack_embed_url, director, composer,
+        review_text, mood, soundtrack_embed_url, director, composer, actors,
         countries, runtime, created_at
       ) VALUES (
         ${movie.tmdb_id}, ${mediaType}, ${movie.title}, ${movie.poster_url}, ${movie.release_year},
         ${movie.genre_names}, ${review_text}, ${mood}, ${embedUrl},
-        ${movie.director}, ${movie.composer},
+        ${movie.director}, ${movie.composer}, ${movie.actors},
         ${movie.countries}, ${movie.runtime}, ${createdAt}
       )
       RETURNING *

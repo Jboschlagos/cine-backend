@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FILTERS, reviewsHref, yearToEra, toQuery, mediaTypeParams } from "@/lib/filters";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import ReviewAdminBar from "@/components/ReviewAdminBar";
@@ -8,9 +10,30 @@ import { toEmbedUrl } from "@/lib/embed";
 import ImageCarousel from "@/components/ImageCarousel";
 import CommentForm from "@/components/CommentForm";
 import MovieSheet from "@/components/MovieSheet";
-import { getReview, getReviewImages } from "@/lib/reviews";
+import { getReview, getReviewImages, getSimilarReviews } from "@/lib/reviews";
+import SimilarReviews from "@/components/SimilarReviews";
 import { toShareImage } from "@/lib/reviewImages";
 import { OPEN_GRAPH_BASE } from "@/lib/site";
+
+// Se guardan 5 actores (lib/tmdb.js), pero aquí mostramos 3.
+const SHOWN_ACTORS = 3;
+const BUTTON_CLASS = "rounded-full bg-neutral-800 px-4 py-1.5 text-sm hover:bg-neutral-700";
+const LINK_CLASS ="border-b border-neutral-700 transition-colors hover:border-white hover:text-white";
+
+// "Joel Coen, Ethan Coen" -> ["Joel Coen", "Ethan Coen"] (así se guardan director y compositor)
+const splitNames = (s) => (s ? s.split(", ").filter(Boolean) : []);
+
+// Lista de links separados por coma: "Drama, Crimen"
+function joinLinks(values, hrefFor) {
+  return values.map((value, i) => (
+    <span key={value}>
+      {i > 0 && ", "}
+      <Link href={hrefFor(value)} className={LINK_CLASS}>
+        {value}
+      </Link>
+    </span>
+  ));
+}
 
 // Si no hay imágenes guardadas, usamos el afiche de TMDB como respaldo.
 function withPosterFallback(images, review) {
@@ -66,9 +89,10 @@ export default async function ReviewPage({ params }) {
 
   // Las consultas van en paralelo para que cargue más rápido.
   // session = tu sesión de admin (null para cualquier visitante).
-  const [review, images, comments, session, igRows] = await Promise.all([
+  const [review, images, similar, comments, session, igRows] = await Promise.all([
     getReview(id),
     getReviewImages(id),
+    getSimilarReviews(id), // "Si te gustó esta…"
     sql`SELECT * FROM comments WHERE review_id = ${id} ORDER BY created_at ASC`,
     auth.api.getSession({ headers: await headers() }),
     sql`SELECT 1 FROM ig_posts WHERE review_id = ${id}`,
@@ -77,6 +101,35 @@ export default async function ReviewPage({ params }) {
   if (!review) notFound();
 
   const imageUrls = withPosterFallback(images, review);
+
+  // Links a la portada filtrando tus reseñas (en series, a la pestaña Series).
+  const filterHref = (params) => reviewsHref(params, review.media_type);
+  const isTv = review.media_type === "tv";
+  const era = yearToEra(review.release_year);
+  const credits = [
+    { label: isTv ? "Creación" : "Dirección", names: splitNames(review.director), param: "director" },
+    { label: "Música", names: splitNames(review.composer), param: "compositor" },
+    { label: "Reparto", names: (review.actors ?? []).slice(0, SHOWN_ACTORS), param: "actor" },
+  ]
+    .filter((c) => c.names.length > 0)
+    .map(({ label, names, param }) => ({
+      label,
+      content: joinLinks(names, (name) => filterHref({ [param]: name })),
+    }));
+  if (era) {
+    credits.push({
+      label: "Año",
+      content: (
+        <Link
+          href={filterHref({ era })}
+          title={`Ver mis ${isTv ? "series" : "reseñas"} ${FILTERS.era.options[era]}`}
+          className={LINK_CLASS}
+        >
+          {review.release_year}
+        </Link>
+      ),
+    });
+  }
 
   const embedUrl = toEmbedUrl(review.soundtrack_embed_url);
   const isSpotify = embedUrl?.includes("spotify.com");
@@ -94,19 +147,41 @@ export default async function ReviewPage({ params }) {
               <span className="text-neutral-300">({review.release_year})</span>
             )}
           </h1>
+          {/* Mood y géneros: cada uno lleva a tus reseñas con ese mismo dato */}
           <p className="mt-1 text-sm text-neutral-300">
             {review.media_type === "tv" && "Serie · "}
-            {MOOD_LABELS[review.mood]}
-            {review.genres?.length > 0 && ` · ${review.genres.join(", ")}`}
+            <Link href={filterHref({ mood: review.mood })} className={LINK_CLASS}>
+              {MOOD_LABELS[review.mood]}
+            </Link>
+            {review.genres?.length > 0 && " · "}
+            {joinLinks(review.genres ?? [], (g) => filterHref({ genero: g }))}
           </p>
-          <MovieSheet
-            tmdbId={review.tmdb_id}
-            mediaType={review.media_type}
-            showSoundtrack={false}
-            className="mt-3 rounded-full bg-neutral-800 px-4 py-1.5 text-sm hover:bg-neutral-700"
-          >
-            Ficha técnica
-          </MovieSheet>
+
+          {/* Créditos: Dirección (o Creación en series) · Música · Reparto · Año */}
+          {credits.length > 0 && (
+            <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-display text-xs uppercase tracking-[0.15em] text-neutral-500">
+              {credits.map(({ label, content }) => (
+                <div key={label} className="flex gap-2">
+                  <dt>{label}</dt>
+                  <dd className="text-neutral-300">{content}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <MovieSheet
+              tmdbId={review.tmdb_id}
+              mediaType={review.media_type}
+              showSoundtrack={false}
+              className={BUTTON_CLASS}
+            >
+              Ficha técnica
+            </MovieSheet>
+            {/* Recomendaciones de TMDB a partir de esta película o serie */}
+            <Link href={`/discover?${toQuery({ como: review.tmdb_id, ...mediaTypeParams(review.media_type) })}`} className={BUTTON_CLASS}>
+              Descubrir más como esta →
+            </Link>
+          </div>
         </div>
 
         <p className="whitespace-pre-line leading-relaxed">{review.review_text}</p>
@@ -139,6 +214,10 @@ export default async function ReviewPage({ params }) {
           <CommentForm reviewId={review.id} />
         </div>
       </section>
+
+      {/* Al final y a todo el ancho (ocupa las 2 columnas) */}
+      <SimilarReviews reviews={similar} mediaType={review.media_type} className="mt-4 md:col-span-2" />
+
     </main>
   );
 }

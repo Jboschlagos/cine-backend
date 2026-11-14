@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ReviewGrid from "@/components/ReviewGrid";
 import MoodFilter from "@/components/MoodFilter";
+import ActiveFilters from "@/components/ActiveFilters";
 import BrowseHeader, { RIGHT_COLUMN_CLASS } from "@/components/BrowseHeader";
 import { getReviews } from "@/lib/reviews";
 import {
@@ -8,6 +9,7 @@ import {
   readMediaType,
   readSearch,
   readSort,
+  readNameFilters,
   toReviewFilters,
   toQuery,
   extraParams,
@@ -16,6 +18,7 @@ import {
   SERIES_SEGMENTS,
   REVIEW_SORTS,
   REVIEW_LABELS,
+  NAME_FILTERS,
 } from "@/lib/filters";
 
 const SEGMENTS = { movie: REVIEW_SEGMENTS, tv: SERIES_SEGMENTS };
@@ -32,25 +35,35 @@ export default async function ReviewsIndex({ searchParams }) {
   const active = readFilters(params, segments);
   const q = readSearch(params);
   const sort = readSort(params);
-  // Lo que no es filtro pero se conserva en todos los links: búsqueda, orden y tipo.
-  const extra = { ...extraParams(q, sort), ...typeParams };
+  // Filtros por nombre (?director=, ?compositor=, ?actor=, ?genero=), que llegan desde una reseña.
+  const names = readNameFilters(params);
+  // Lo que no es parte de la frase pero se conserva en todos los links:
+  // búsqueda, orden, tipo y filtros por nombre.
+  const extra = { ...extraParams(q, sort), ...typeParams, ...names };
 
-  const { reviews, total } = await getReviews(toReviewFilters(active), { q, sort, page: 1, mediaType });
-  const hasFilters = Object.keys(active).length > 0 || q;
+  const { reviews, total } = await getReviews(toReviewFilters(active, names), { q, sort, page: 1, mediaType });
+  const hasFilters = Object.keys(active).length > 0 || Object.keys(names).length > 0 || q;
   const query = toQuery({ ...active, ...extra });
   const href = (values) => {
     const next = toQuery(values);
     return next ? `/?${next}` : "/";
   };
 
+  // Filtros por nombre activos, cada uno con su link para quitarlo (conserva todo lo demás).
+  const base = { ...active, ...extraParams(q, sort), ...typeParams };
+  const activeNames = Object.entries(names).map(([name, value]) => {
+    const { [name]: _removed, ...rest } = names;
+    return { name, label: NAME_FILTERS[name], value, href: href({ ...base, ...rest }) };
+  });
+
   // Link que cambia solo el orden y mantiene filtros, búsqueda y tipo.
-  const sortHref = (key) => href({ ...active, ...extraParams(q, key), ...typeParams });
+  const sortHref = (key) => href({ ...active, ...extraParams(q, key), ...typeParams, ...names });
 
   // Link para cambiar de tipo: conserva búsqueda, orden y los filtros que apliquen al otro tipo.
   const typeHref = (nextType) => {
     const allowed = SEGMENTS[nextType];
     const kept = Object.fromEntries(Object.entries(active).filter(([name]) => allowed.includes(name)));
-    return href({ ...kept, ...extraParams(q, sort), ...mediaTypeParams(nextType) });
+    return href({ ...kept, ...extraParams(q, sort), ...mediaTypeParams(nextType), ...names });
   };
 
   return (
@@ -63,7 +76,7 @@ export default async function ReviewsIndex({ searchParams }) {
       <BrowseHeader
         type={mediaType}
         typeHref={typeHref}
-        search={{ action: "/", q, keep: { ...active, ...extraParams("", sort), ...typeParams } }}
+        search={{ action: "/", q, keep: { ...active, ...extraParams("", sort), ...typeParams, ...names } }}
       >
         <MoodFilter
           basePath="/"
@@ -74,6 +87,8 @@ export default async function ReviewsIndex({ searchParams }) {
           className={RIGHT_COLUMN_CLASS}
           oneLineXl
         />
+        {/* "DIRECTOR: LUC BESSON ✕": los filtros que llegan desde una reseña */}
+        <ActiveFilters items={activeNames} clearHref={href(base)} className={RIGHT_COLUMN_CLASS} />
       </BrowseHeader>
 
       {/* Contador + orden */}

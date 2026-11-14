@@ -84,6 +84,7 @@ export async function PUT(request, { params }) {
       genres: movie.genre_names,
       director: movie.director,
       composer: movie.composer,
+      actors: movie.actors,
       countries: movie.countries,
       runtime: movie.runtime,
       mood: inferMood(movie.genre_ids, movie.keywords), // si no eliges uno abajo
@@ -104,7 +105,7 @@ export async function PUT(request, { params }) {
         poster_url = ${next.poster_url}, release_year = ${next.release_year}, genres = ${next.genres},
         review_text = ${next.review_text}, mood = ${next.mood},
         soundtrack_embed_url = ${next.soundtrack_embed_url},
-        director = ${next.director}, composer = ${next.composer},
+        director = ${next.director}, composer = ${next.composer}, actors = ${next.actors},
         countries = ${next.countries}, runtime = ${next.runtime}, created_at = ${next.created_at}
       WHERE id = ${id}
       RETURNING *
