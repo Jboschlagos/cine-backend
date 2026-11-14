@@ -58,9 +58,16 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-neutral-900 bg-black/85 font-display uppercase backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        {/* Izquierda: logo */}
-        <Link href="/" aria-label={`${SITE.name}, inicio`} className="text-white">
+        {/* Izquierda: logo y, debajo, la frase del sitio (más chica y apagada) */}
+        <Link
+          href="/"
+          aria-label={`${SITE.name}, ${SITE.tagline}, inicio`}
+          className="flex flex-col items-center gap-1 text-white"
+        >
           <Logo className="h-7 w-auto sm:h-8" />
+          <span className="text-[10px] leading-none tracking-[0.3em] text-neutral-500">
+            {SITE.tagline}
+          </span>
         </Link>
 
         {/* Derecha, en pantallas de 768px o más ("md") */}
