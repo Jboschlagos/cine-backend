@@ -13,9 +13,29 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
 });
 
+// Título y descripción del sitio completo. Las páginas que definen su propio
+// "title" usan el template: "Contacto · Reducido".
+const defaultTitle = `${SITE.name} — ${SITE.tagline}`;
+
 export const metadata = {
-  title: { default: SITE.name, template: `%s · ${SITE.name}` },
+  // URL base: Next la usa para armar links absolutos (las redes los necesitan así).
+  metadataBase: new URL(SITE.url),
+  title: { default: defaultTitle, template: `%s · ${SITE.name}` },
   description: SITE.description,
+  // Open Graph: lo que leen WhatsApp, Facebook e Instagram al compartir un link.
+  openGraph: {
+    title: defaultTitle,
+    description: SITE.description,
+    siteName: SITE.name,
+    locale: "es_CL",
+    type: "website",
+  },
+  // Lo mismo para X/Twitter; "summary_large_image" = vista previa con imagen grande.
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: SITE.description,
+  },
 };
 
 export default function RootLayout({ children }) {
