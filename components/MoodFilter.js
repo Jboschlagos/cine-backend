@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FILTERS } from "@/lib/filters";
+import { FILTERS, filterHref } from "@/lib/filters";
 
 // Filtros como una frase: "Hoy quiero algo [para llorar ▾] [chileno ▾] [de los 80 ▾] ..."
 // Cada parte subrayada abre su propio panel. Las partes sin elegir se ven en gris.
@@ -47,22 +47,15 @@ export default function MoodFilter({
     };
   }, [openName]);
 
-  // Link que cambia UN filtro y mantiene los demás.
-  const hrefWith = (name, value) => {
-    const next = { ...active, ...extra };
-    if (value) next[name] = value;
-    else delete next[name];
-    const query = new URLSearchParams(next).toString();
-    return query ? `${basePath}?${query}` : basePath;
-  };
+  // Link que cambia UN filtro y mantiene los demás (value = null lo quita).
+  const hrefWith = (name, value) => filterHref(basePath, { ...active, ...extra, [name]: value });
 
   const optionClass = (isActive) =>
     `block py-0.5 transition-colors ${isActive ? "text-white" : "text-neutral-400 hover:text-white"}`;
 
   const open = openName ? FILTERS[openName] : null;
   const anyActive = segments.some((name) => active[name]);
-  const extraQuery = new URLSearchParams(extra).toString();
-  const hrefClear = extraQuery ? `${basePath}?${extraQuery}` : basePath;
+  const hrefClear = filterHref(basePath, extra);
 
   return (
     <div ref={boxRef} className={`relative mx-auto max-w-3xl px-4 pb-6 pt-5 text-center ${className}`}>

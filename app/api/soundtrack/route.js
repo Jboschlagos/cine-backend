@@ -30,7 +30,11 @@ export async function GET(request) {
   const { spotify_link, ...list } = found ?? {};
 
   // Si la base falla (ej. falta correr la migración), seguimos sin álbum.
-  const spotifyUri = await findSoundtrackUri(Number(tmdbId), type, found, { mbFailed }).catch(() => null);
+  const spotifyUri = await findSoundtrackUri(Number(tmdbId), type, found, {
+    mbFailed,
+    titles: [info.original_title, info.title],
+    year: info.release_year,
+  }).catch(() => null);
 
   return NextResponse.json({ list: found ? list : null, spotifyUri });
 }

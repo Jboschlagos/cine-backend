@@ -144,7 +144,10 @@ export default async function ReviewPage({ params }) {
   const isSpotify = embedUrl?.includes("spotify.com");
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 p-4 md:grid-cols-2">
+    <main className="mx-auto max-w-5xl p-4">
+      {/* Bloque 1: carrusel + reseña. El carrusel es "sticky" (te acompaña al bajar) y solo
+          puede moverse DENTRO de este bloque: así nunca tapa "Si te gustó…", que va afuera. */}
+      <div className="grid gap-6 md:grid-cols-2">
       <ImageCarousel images={imageUrls} alt={review.title} />
 
       <section className="flex flex-col gap-4">
@@ -228,8 +231,10 @@ export default async function ReviewPage({ params }) {
         </div>
       </section>
 
-      {/* Al final y a todo el ancho (ocupa las 2 columnas) */}
-      <SimilarReviews reviews={similar} mediaType={review.media_type} className="mt-4 md:col-span-2" />
+      </div>
+
+      {/* Bloque 2: sección independiente, al final y a todo el ancho */}
+      <SimilarReviews reviews={similar} mediaType={review.media_type} className="mt-16" />
 
     </main>
   );

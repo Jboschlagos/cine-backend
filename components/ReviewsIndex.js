@@ -1,7 +1,8 @@
-import Link from "next/link";
 import ReviewGrid from "@/components/ReviewGrid";
 import MoodFilter from "@/components/MoodFilter";
 import ActiveFilters from "@/components/ActiveFilters";
+import SortLinks from "@/components/SortLinks";
+import FilterSheet from "@/components/FilterSheet";
 import BrowseHeader, { RIGHT_COLUMN_CLASS } from "@/components/BrowseHeader";
 import { getReviews } from "@/lib/reviews";
 import {
@@ -12,11 +13,11 @@ import {
   readNameFilters,
   toReviewFilters,
   toQuery,
+  filterHref,
   extraParams,
   mediaTypeParams,
   REVIEW_SEGMENTS,
   SERIES_SEGMENTS,
-  REVIEW_SORTS,
   REVIEW_LABELS,
   NAME_FILTERS,
 } from "@/lib/filters";
@@ -44,10 +45,7 @@ export default async function ReviewsIndex({ searchParams }) {
   const { reviews, total } = await getReviews(toReviewFilters(active, names), { q, sort, page: 1, mediaType });
   const hasFilters = Object.keys(active).length > 0 || Object.keys(names).length > 0 || q;
   const query = toQuery({ ...active, ...extra });
-  const href = (values) => {
-    const next = toQuery(values);
-    return next ? `/?${next}` : "/";
-  };
+  const href = (values) => filterHref("/", values);
 
   // Filtros por nombre activos, cada uno con su link para quitarlo (conserva todo lo demás).
   const base = { ...active, ...extraParams(q, sort), ...typeParams };
@@ -78,39 +76,36 @@ export default async function ReviewsIndex({ searchParams }) {
         typeHref={typeHref}
         search={{ action: "/", q, keep: { ...active, ...extraParams("", sort), ...typeParams, ...names } }}
       >
-        <MoodFilter
-          basePath="/"
-          active={active}
-          extra={extra}
-          segments={segments}
-          labels={REVIEW_LABELS}
-          className={RIGHT_COLUMN_CLASS}
-          oneLineXl
-        />
+        {/* Escritorio (1024px o más): la frase de filtros y, en la misma fila a la derecha, "Ordenar" */}
+        <div className={`hidden lg:flex lg:items-baseline lg:justify-between lg:gap-6 ${RIGHT_COLUMN_CLASS}`}>
+          <MoodFilter
+            basePath="/"
+            active={active}
+            extra={extra}
+            segments={segments}
+            labels={REVIEW_LABELS}
+            className="lg:mx-0 lg:min-w-0 lg:max-w-none lg:flex-1 lg:px-0 lg:pt-0 lg:text-left"
+            oneLineXl
+          />
+          <SortLinks current={sort} hrefFor={sortHref} />
+        </div>
+
+        {/* Celular y tablet: un solo botón "Filtros · N" que abre el panel desde abajo */}
+        <div className="flex justify-center px-4 pb-5 pt-5 lg:hidden">
+          <FilterSheet
+            basePath="/"
+            segments={segments}
+            active={active}
+            sort={sort}
+            keep={{ ...extraParams(q, "recientes"), ...typeParams, ...names }}
+            extraCount={Object.keys(names).length}
+            labels={REVIEW_LABELS}
+          />
+        </div>
+
         {/* "DIRECTOR: LUC BESSON ✕": los filtros que llegan desde una reseña */}
         <ActiveFilters items={activeNames} clearHref={href(base)} className={RIGHT_COLUMN_CLASS} />
       </BrowseHeader>
-
-      {/* Contador + orden */}
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 pb-4 font-display text-[10px] uppercase tracking-[0.2em] text-neutral-500">
-        <span>
-          {total} {total === 1 ? noun[0] : noun[1]}
-          {q && <> para “{q}”</>}
-        </span>
-        <span className="flex gap-3">
-          Ordenar:
-          {Object.entries(REVIEW_SORTS).map(([key, label]) => (
-            <Link
-              key={key}
-              href={sortHref(key)}
-              aria-current={sort === key ? "true" : undefined}
-              className={sort === key ? "text-white" : "hover:text-white"}
-            >
-              {label}
-            </Link>
-          ))}
-        </span>
-      </div>
 
       {reviews.length === 0 ? (
         <p className="p-4 text-center font-display text-xs uppercase tracking-[0.15em] text-neutral-400">
