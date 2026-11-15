@@ -3,6 +3,8 @@
 import { Fragment, useRef, useState } from "react";
 import Link from "next/link";
 import ImageCarousel from "@/components/ImageCarousel";
+import SpotifyEmbed from "@/components/SpotifyEmbed";
+import SoundtrackAlbumEditor from "@/components/SoundtrackAlbumEditor";
 
 // Link a la vista de una persona en Descubrir: /discover?persona=1234&rol=actor[&tipo=serie]
 function personHref(personId, rol, mediaType) {
@@ -36,7 +38,7 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
   const [isOpen, setIsOpen] = useState(false);
   const [sheet, setSheet] = useState(null);
   const [error, setError] = useState("");
-  const [soundtrack, setSoundtrack] = useState(undefined); // undefined = cargando, null = no encontrada
+  const [soundtrack, setSoundtrack] = useState(undefined); // undefined = cargando; luego { list, spotifyUri }
 
   async function open() {
     dialogRef.current?.showModal(); // <dialog> nativo: se cierra con Esc y bloquea el fondo
@@ -50,12 +52,9 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
     setSheet(data);
 
     if (showSoundtrack) {
-      const params = new URLSearchParams({
-        title: data.original_title || data.title,
-        year: data.release_year ?? "",
-      });
-      const r = await fetch(`/api/soundtrack?${params}`);
-      setSoundtrack(r.ok ? await r.json() : null);
+      // { list: canciones de MusicBrainz o null, spotifyUri: álbum de Spotify o null }
+      const r = await fetch(`/api/soundtrack?tmdb_id=${tmdbId}${isTv ? "&type=tv" : ""}`);
+      setSoundtrack(r.ok ? await r.json() : { list: null, spotifyUri: null });
     }
   }
 
@@ -190,41 +189,64 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                   <section>
                     <h3 className="mb-2 font-medium">Banda sonora</h3>
                     {soundtrack === undefined && <p className="text-sm text-neutral-400">Buscando banda sonora...</p>}
-                    {soundtrack && (
-                      <>
-                        <p className="mb-2 text-sm text-neutral-300">
-                          {soundtrack.album}
-                          {soundtrack.artist && ` — ${soundtrack.artist}`}
-                        </p>
-                        <ol className="mb-2 max-h-60 overflow-y-auto text-sm">
-                          {soundtrack.tracks.map((t, i) => (
-                            <li key={i} className="flex justify-between gap-4 border-b border-neutral-900 py-1">
-                              <span>
-                                {i + 1}. {t.title}
-                                {t.artist && t.artist !== soundtrack.artist && (
-                                  <span className="text-neutral-400"> — {t.artist}</span>
-                                )}
-                              </span>
-                              <span className="text-neutral-400">{formatLength(t.length)}</span>
-                            </li>
-                          ))}
-                        </ol>
-                        <a href={soundtrack.url} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 underline">
-                          Fuente: MusicBrainz
-                        </a>
-                      </>
+
+                    {/* Con álbum de Spotify: se escucha aquí mismo (su lista permite elegir canción) */}
+                    {soundtrack?.spotifyUri ? (
+                      <SpotifyEmbed
+                        key={soundtrack.spotifyUri}
+                        uri={soundtrack.spotifyUri}
+                        title={`Banda sonora de ${sheet.title}`}
+                      />
+                    ) : (
+                      soundtrack && (
+                        // Sin álbum: la lista de MusicBrainz (si hay) y el botón a Spotify, como antes
+                        <>
+                          {soundtrack.list ? (
+                            <>
+                              <p className="mb-2 text-sm text-neutral-300">
+                                {soundtrack.list.album}
+                                {soundtrack.list.artist && ` — ${soundtrack.list.artist}`}
+                              </p>
+                              <ol className="mb-2 max-h-60 overflow-y-auto text-sm">
+                                {soundtrack.list.tracks.map((t, i) => (
+                                  <li key={i} className="flex justify-between gap-4 border-b border-neutral-900 py-1">
+                                    <span>
+                                      {i + 1}. {t.title}
+                                      {t.artist && t.artist !== soundtrack.list.artist && (
+                                        <span className="text-neutral-400"> — {t.artist}</span>
+                                      )}
+                                    </span>
+                                    <span className="text-neutral-400">{formatLength(t.length)}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                              <a href={soundtrack.list.url} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-400 underline">
+                                Fuente: MusicBrainz
+                              </a>
+                            </>
+                          ) : (
+                            <p className="text-sm text-neutral-400">No encontramos el listado de canciones.</p>
+                          )}
+                          <a
+                            href={spotifySearch}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 block w-fit rounded-full bg-[#1DB954] px-4 py-2 text-sm font-medium text-black"
+                          >
+                            Escuchar en Spotify
+                          </a>
+                        </>
+                      )
                     )}
-                    {soundtrack === null && (
-                      <p className="text-sm text-neutral-400">No encontramos el listado de canciones.</p>
+
+                    {/* Solo con tu sesión de admin: corregir el álbum a mano */}
+                    {soundtrack !== undefined && (
+                      <SoundtrackAlbumEditor
+                        tmdbId={tmdbId}
+                        mediaType={mediaType}
+                        onSaved={(uri) => setSoundtrack((s) => ({ ...s, spotifyUri: uri }))}
+                      />
                     )}
-                    <a
-                      href={spotifySearch}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 block w-fit rounded-full bg-[#1DB954] px-4 py-2 text-sm font-medium text-black"
-                    >
-                      Escuchar en Spotify
-                    </a>
                   </section>
                 )}
               </>

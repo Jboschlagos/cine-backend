@@ -3,30 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { SOUNDTRACKS } from "@/lib/soundtracks";
 import { PAUSE_MUSIC_EVENT } from "@/lib/music";
-
-// ---- Spotify iFrame API ----
-// Script oficial de Spotify que crea el reproductor y entrega un "control"
-// con pause(), loadUri(), etc. (un <iframe> simple no se puede pausar desde el código).
-// Se carga una sola vez, recién cuando se abre el reproductor.
-let spotifyApiPromise = null;
-function loadSpotifyApi() {
-  if (!spotifyApiPromise) {
-    spotifyApiPromise = new Promise((resolve) => {
-      window.onSpotifyIframeApiReady = resolve; // Spotify llama a esta función al terminar de cargar
-      const script = document.createElement("script");
-      script.src = "https://open.spotify.com/embed/iframe-api/v1";
-      script.async = true;
-      document.body.appendChild(script);
-    });
-  }
-  return spotifyApiPromise;
-}
-
+// Spotify iFrame API (un <iframe> simple no se puede pausar desde el código) y
 // "https://open.spotify.com/embed/album/ID" -> "spotify:album:ID" (el formato que pide la API)
-function toSpotifyUri(embedUrl) {
-  const [, , type, id] = new URL(embedUrl).pathname.split("/");
-  return `spotify:${type}:${id}`;
-}
+import { loadSpotifyApi, toSpotifyUri } from "@/lib/spotify";
 
 function randomIndex(except) {
   if (SOUNDTRACKS.length < 2) return 0;
