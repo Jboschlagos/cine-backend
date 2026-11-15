@@ -12,6 +12,8 @@ import CommentForm from "@/components/CommentForm";
 import MovieSheet from "@/components/MovieSheet";
 import { getReview, getReviewImages, getSimilarReviews } from "@/lib/reviews";
 import SimilarReviews from "@/components/SimilarReviews";
+import Trailer from "@/components/Trailer";
+import { getTrailer } from "@/lib/tmdb";
 import { toShareImage } from "@/lib/reviewImages";
 import { OPEN_GRAPH_BASE } from "@/lib/site";
 
@@ -89,10 +91,17 @@ export default async function ReviewPage({ params }) {
 
   // Las consultas van en paralelo para que cargue más rápido.
   // session = tu sesión de admin (null para cualquier visitante).
-  const [review, images, similar, comments, session, igRows] = await Promise.all([
-    getReview(id),
+  // El tráiler necesita el tmdb_id: se pide apenas llega la reseña, en paralelo con lo demás.
+  // Si TMDB falla, la página igual se muestra (sin tráiler).
+  const reviewPromise = getReview(id);
+  const trailerPromise = reviewPromise.then((r) =>
+    r ? getTrailer(r.tmdb_id, r.media_type).catch(() => null) : null,
+  );
+  const [review, images, similar, trailer, comments, session, igRows] = await Promise.all([
+    reviewPromise,
     getReviewImages(id),
     getSimilarReviews(id), // "Si te gustó esta…"
+    trailerPromise,
     sql`SELECT * FROM comments WHERE review_id = ${id} ORDER BY created_at ASC`,
     auth.api.getSession({ headers: await headers() }),
     sql`SELECT 1 FROM ig_posts WHERE review_id = ${id}`,
@@ -173,6 +182,7 @@ export default async function ReviewPage({ params }) {
               tmdbId={review.tmdb_id}
               mediaType={review.media_type}
               showSoundtrack={false}
+              showTrailer={false} // el tráiler ya está en la página, bajo la reseña escrita
               className={BUTTON_CLASS}
             >
               Ficha técnica
@@ -185,6 +195,9 @@ export default async function ReviewPage({ params }) {
         </div>
 
         <p className="whitespace-pre-line leading-relaxed">{review.review_text}</p>
+
+        {/* Tráiler (si TMDB tiene uno): bajo la reseña escrita, arriba de la banda sonora */}
+        {trailer && <Trailer videoKey={trailer.key} title={review.title} />}
 
         {embedUrl && (
           <iframe

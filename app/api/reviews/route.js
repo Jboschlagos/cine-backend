@@ -57,7 +57,7 @@ export async function POST(request) {
     : null;
   if (soundtrack_embed_url && !embedUrl) {
     return NextResponse.json(
-      { error: "El soundtrack debe ser un link de Spotify o YouTube" },
+      { error: "El soundtrack debe ser un link de Spotify o YouTube (video o playlist)" },
       { status: 400 },
     );
   }

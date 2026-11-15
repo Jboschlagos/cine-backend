@@ -29,7 +29,8 @@ function formatLength(ms) {
 // (en Descubrir es el afiche; en la reseña, el texto "Ficha técnica").
 // showSoundtrack={false} oculta la banda sonora automática (en tus reseñas ya pones la tuya).
 // mediaType="tv" para series.
-export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack = true, className = "", children }) {
+// showTrailer={false} oculta el tráiler (en tus reseñas ya se ve en la página, bajo el carrusel).
+export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack = true, showTrailer = true, className = "", children }) {
   const isTv = mediaType === "tv";
   const dialogRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -174,7 +175,7 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
                   </div>
                 </div>
 
-                {sheet.trailer_key ? (
+                {!showTrailer ? null : sheet.trailer_key ? (
                   <iframe
                     src={`https://www.youtube.com/embed/${sheet.trailer_key}`}
                     title={`Tráiler de ${sheet.title}`}

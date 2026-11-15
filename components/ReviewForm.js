@@ -387,7 +387,7 @@ export default function ReviewForm({ prefill = null, existing = null }) {
           <input
             value={soundtrack}
             onChange={(e) => setSoundtrack(e.target.value)}
-            placeholder="Link de Spotify o YouTube (opcional)"
+            placeholder="Link de Spotify o YouTube: video o playlist (opcional)"
             className="rounded border border-neutral-700 bg-neutral-900 p-2"
           />
           {existing && (

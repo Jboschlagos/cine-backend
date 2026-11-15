@@ -49,7 +49,7 @@ export async function PUT(request, { params }) {
   if ("soundtrack_embed_url" in body) {
     const link = body.soundtrack_embed_url?.trim?.() || null;
     const embed = link ? toEmbedUrl(link) : null;
-    if (link && !embed) return bad("El soundtrack debe ser un link de Spotify o YouTube");
+    if (link && !embed) return bad("El soundtrack debe ser un link de Spotify o YouTube (video o playlist)");
     next.soundtrack_embed_url = embed;
   }
 
