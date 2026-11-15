@@ -6,15 +6,21 @@ import DiscoverCard from "@/components/DiscoverCard";
 // Grilla de Descubrir con botón "Ver más": pide la página siguiente
 // de TMDB (mismos filtros y mismo orden) y la suma al final, sin repetir.
 // noun = "películas" o "series" (solo para el texto de error).
-export default function DiscoverGrid({ initial, query, sort, page, totalPages, noun = "películas" }) {
+// localPageSize = si viene, "initial" ya trae TODO y "Ver más" solo muestra
+// los siguientes N, sin pedir nada a TMDB (lo usa la vista de persona).
+export default function DiscoverGrid({ initial, query, sort, page, totalPages, noun = "películas", localPageSize }) {
   const [movies, setMovies] = useState(initial);
   const [nextPage, setNextPage] = useState(page + 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [shown, setShown] = useState(localPageSize ?? Infinity);
 
-  const hasMore = nextPage <= Math.min(totalPages, 500); // TMDB no da más de 500 páginas
+  const hasMore = localPageSize
+    ? shown < movies.length
+    : nextPage <= Math.min(totalPages, 500); // TMDB no da más de 500 páginas
 
   async function loadMore() {
+    if (localPageSize) return setShown((n) => n + localPageSize);
     setLoading(true);
     setError("");
     // query = filtros activos, ej. "mood=tension&era=80s", o la búsqueda "q=alien"
@@ -38,7 +44,7 @@ export default function DiscoverGrid({ initial, query, sort, page, totalPages, n
   return (
     <>
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-3 px-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {movies.map((movie) => (
+        {movies.slice(0, shown).map((movie) => (
           <DiscoverCard key={movie.tmdb_id} movie={movie} />
         ))}
       </div>

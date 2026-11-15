@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { discoverMovies, searchMoviesPage, getRecommendations } from "@/lib/tmdb";
-import { getReviewedTmdbIds } from "@/lib/reviews";
+import { discoverMovies, searchMoviesPage, getRecommendations, getPersonCredits } from "@/lib/tmdb";
+import { getReviewedTmdbIds, getReviews } from "@/lib/reviews";
 import ActiveFilters from "@/components/ActiveFilters";
+import PersonResults from "@/components/PersonResults";
 import {
   FILTERS,
+  NAME_FILTERS,
+  readPersona,
+  reviewsHref,
+  toReviewFilters,
   readComo,
   filterByMood,
   COMO_SEGMENTS,
@@ -47,6 +52,24 @@ async function comoResults(tmdbId, type, mood) {
   };
 }
 
+// Vista de persona (?persona=&rol=): tus reseñas con ella (buscadas por nombre, con el
+// mismo filtro de la portada) + sus películas en TMDB, sin las que ya reseñaste (por tmdb_id).
+async function personResults({ id, rol }, type) {
+  const person = await getPersonCredits(id, rol, type);
+  if (!person) notFound(); // esa persona no existe en TMDB
+  const names = { [rol]: person.name }; // ej. { director: "Robert Zemeckis" }
+  const [mine, reviewed] = await Promise.all([
+    getReviews(toReviewFilters({}, names), { mediaType: type }),
+    getReviewedTmdbIds(person.results.map((m) => m.tmdb_id), type),
+  ]);
+  return {
+    name: person.name,
+    names,
+    mine,
+    tmdbResults: person.results.filter((m) => !reviewed.has(m.tmdb_id)),
+  };
+}
+
 export default async function DiscoverPage({ searchParams }) {
   const params = await searchParams;
   const type = readMediaType(params);
@@ -54,12 +77,56 @@ export default async function DiscoverPage({ searchParams }) {
   const noun = isTv ? "series" : "películas";
   const typeParams = mediaTypeParams(type); // {} o { tipo: "serie" }
   const q = readSearch(params);
-  // "Descubrir más como esta": ?como=<id de TMDB>. La búsqueda tiene prioridad.
-  const como = q ? null : readComo(params);
+  // Vista de persona: ?persona=<id de TMDB>&rol=director|compositor|actor.
+  const persona = q ? null : readPersona(params);
+  // "Descubrir más como esta": ?como=<id de TMDB>. La búsqueda y la persona tienen prioridad.
+  const como = q || persona ? null : readComo(params);
   // Con "Como" solo se puede elegir el mood (ver COMO_SEGMENTS en lib/filters.js).
   const segments = como ? COMO_SEGMENTS : DISCOVER_SEGMENTS[type];
   // Si hay búsqueda, los filtros no aplican (TMDB no permite combinarlos).
   const active = q ? {} : readFilters(params, segments);
+
+  // Link para cambiar de tipo: conserva búsqueda y filtros que apliquen al otro tipo
+  // (o la persona, que también tiene series).
+  const typeHref = (nextType) => {
+    if (persona) {
+      return `/discover?${toQuery({ persona: String(persona.id), rol: persona.rol, ...mediaTypeParams(nextType) })}`;
+    }
+    const allowed = DISCOVER_SEGMENTS[nextType];
+    const kept = Object.fromEntries(Object.entries(active).filter(([name]) => allowed.includes(name)));
+    const next = toQuery({ ...(q ? { q } : kept), ...mediaTypeParams(nextType) });
+    return next ? `/discover?${next}` : "/discover";
+  };
+  const search = {
+    action: "/discover",
+    q,
+    keep: typeParams,
+    placeholder: isTv ? "Buscar cualquier serie" : "Buscar cualquier película",
+  };
+
+  if (persona) {
+    const person = await personResults(persona, type);
+    const label = isTv && persona.rol === "director" ? "Creación" : NAME_FILTERS[persona.rol];
+    return (
+      <main>
+        {/* Sin la frase "Hoy quiero…": arriba solo "DIRECTOR: ROBERT ZEMECKIS ✕" */}
+        <BrowseHeader type={type} typeHref={typeHref} search={search} phraseRow={false}>
+          <ActiveFilters
+            items={[{ name: "persona", label, value: person.name, href: isTv ? "/discover?tipo=serie" : "/discover" }]}
+            className={`pt-5 ${RIGHT_COLUMN_CLASS}`}
+          />
+        </BrowseHeader>
+        <PersonResults
+          name={person.name}
+          mine={person.mine}
+          allHref={reviewsHref(person.names, type)}
+          tmdbResults={person.tmdbResults}
+          noun={noun}
+          personKey={`${persona.id}-${persona.rol}-${type}`}
+        />
+      </main>
+    );
+  }
 
   let data;
   let comoInfo = null; // { title, unsupported } cuando hay "Como"
@@ -78,28 +145,11 @@ export default async function DiscoverPage({ searchParams }) {
   // Link para quitar "Como": la misma página con el mood y el tipo, sin "como".
   const quitComoHref = query ? `/discover?${query}` : "/discover";
 
-  // Link para cambiar de tipo: conserva búsqueda y filtros que apliquen al otro tipo.
-  const typeHref = (nextType) => {
-    const allowed = DISCOVER_SEGMENTS[nextType];
-    const kept = Object.fromEntries(Object.entries(active).filter(([name]) => allowed.includes(name)));
-    const next = toQuery({ ...(q ? { q } : kept), ...mediaTypeParams(nextType) });
-    return next ? `/discover?${next}` : "/discover";
-  };
   const clearSearchHref = isTv ? `/discover?${toQuery(typeParams)}` : "/discover";
 
   return (
     <main>
-      <BrowseHeader
-        type={type}
-        typeHref={typeHref}
-        search={{
-          action: "/discover",
-          q,
-          keep: typeParams,
-          placeholder: isTv ? "Buscar cualquier serie" : "Buscar cualquier película",
-        }}
-        phraseRow={!q}
-      >
+      <BrowseHeader type={type} typeHref={typeHref} search={search} phraseRow={!q}>
         {q ? (
           <p className={`mx-auto max-w-2xl px-4 pb-6 pt-5 text-center font-display text-xs uppercase tracking-[0.2em] text-neutral-400 ${RIGHT_COLUMN_CLASS}`}>
             Resultados para “{q}” ·{" "}

@@ -1,7 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
+import Link from "next/link";
 import ImageCarousel from "@/components/ImageCarousel";
+
+// Link a la vista de una persona en Descubrir: /discover?persona=1234&rol=actor[&tipo=serie]
+function personHref(personId, rol, mediaType) {
+  const params = new URLSearchParams({ persona: String(personId), rol });
+  if (mediaType === "tv") params.set("tipo", "serie");
+  return `/discover?${params}`;
+}
 
 function formatRuntime(min) {
   if (!min) return null;
@@ -117,19 +125,33 @@ export default function MovieSheet({ tmdbId, mediaType = "movie", showSoundtrack
 
                     <p className="leading-relaxed">{sheet.overview || "Sin sinopsis en español."}</p>
 
+                    {/* Cada persona lleva a Descubrir: tus reseñas con ella + más de ella en TMDB */}
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                      {sheet.directors.length > 0 && (
-                        <>
-                          <dt className="text-neutral-300">{isTv ? "Creada por" : "Dirección"}</dt>
-                          <dd>{sheet.directors.join(", ")}</dd>
-                        </>
-                      )}
-                      {sheet.cast.length > 0 && (
-                        <>
-                          <dt className="text-neutral-300">Reparto</dt>
-                          <dd>{sheet.cast.join(", ")}</dd>
-                        </>
-                      )}
+                      {[
+                        { label: isTv ? "Creada por" : "Dirección", list: sheet.directors, rol: "director" },
+                        { label: "Música", list: sheet.composers, rol: "compositor" },
+                        { label: "Reparto", list: sheet.cast, rol: "actor" },
+                      ]
+                        .filter(({ list }) => list.length > 0)
+                        .map(({ label, list, rol }) => (
+                          <Fragment key={rol}>
+                            <dt className="text-neutral-300">{label}</dt>
+                            <dd>
+                              {list.map((person, i) => (
+                                <Fragment key={person.id}>
+                                  {i > 0 && ", "}
+                                  <Link
+                                    href={personHref(person.id, rol, mediaType)}
+                                    onClick={close}
+                                    className="border-b border-neutral-700 transition-colors hover:border-white"
+                                  >
+                                    {person.name}
+                                  </Link>
+                                </Fragment>
+                              ))}
+                            </dd>
+                          </Fragment>
+                        ))}
                     </dl>
 
                     <section>
